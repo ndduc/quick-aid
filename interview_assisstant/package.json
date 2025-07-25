@@ -1,0 +1,15 @@
+{
+  "name": "interview_assisstant",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "powershell -Command \"if (Test-Path dist) { Remove-Item dist -Recurse -Force }; New-Item -ItemType Directory -Path dist; esbuild src/main.js --bundle --outfile=dist/content.js --format=iife; Copy-Item -Path manifest.json -Destination dist/\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.25.6"
+  }
+}
