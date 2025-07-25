@@ -10,7 +10,7 @@ const defaultScreenshotMessages = [
 
 const defaultLang = ["Java", "Javascript"];
 const defaultOpenAiModel = "gpt-4o";
-let dev_key = "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";
+let dev_key = "";
 let empty_key = "sk-...CHAT_GPT_TOKEN_KEY"; 
 
 export function loadConfig() {
