@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "QuickAid",
+  "version": "1.0",
+  "description": "Read transcript from 3rd party plugin like Tactiq, allow user to send to GPT, show overlay response",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*"],
+      "js": ["content.js"],
+      "type": "module"
+    }
+  ],
+  "action": {
+    "default_title": "QuickAid"
+  }
+}
