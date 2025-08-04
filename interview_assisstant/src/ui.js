@@ -158,7 +158,7 @@ export function createConfigBtn() {
 }
 
 //  CONFIGURATION MODAL (MODEL - DIALOG)
-export function createConfigModal(OPENAI_API_KEY, OPENAI_MODEL) {
+export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt) {
   const configModal = document.createElement("div");
   configModal.style.cssText = `
     display: none;
@@ -231,12 +231,12 @@ export function createConfigModal(OPENAI_API_KEY, OPENAI_MODEL) {
   `;
 
   const apiKeyLabel = document.createElement("label");
-  apiKeyLabel.textContent = "OpenAI API Key:";
+  apiKeyLabel.textContent = "API Key:";
   apiKeyLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
   const apiKeyInput = document.createElement("input");
   apiKeyInput.type = "text";
-  apiKeyInput.placeholder = "OpenAI API Key";
+  apiKeyInput.placeholder = "API Key";
   apiKeyInput.style.cssText = `
     width: 100%;
     margin-bottom: 10px;
@@ -248,12 +248,12 @@ export function createConfigModal(OPENAI_API_KEY, OPENAI_MODEL) {
   `;
 
   const modelLabel = document.createElement("label");
-  modelLabel.textContent = "OpenAI Model:";
+  modelLabel.textContent = "AI Model:";
   modelLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
   const openaiModelInput = document.createElement("input");
   openaiModelInput.type = "text";
-  openaiModelInput.placeholder = "OpenAI Model";
+  openaiModelInput.placeholder = "AI Model";
   openaiModelInput.style.cssText = `
     width: 100%;
     margin-bottom: 10px;
@@ -264,6 +264,56 @@ export function createConfigModal(OPENAI_API_KEY, OPENAI_MODEL) {
     box-sizing: border-box;
   `;
 
+  const jobRoleLabel = document.createElement("label");
+  jobRoleLabel.textContent = "Job Role:";
+  jobRoleLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  const jobRoleInput = document.createElement("input");
+  jobRoleInput.type = "text";
+  jobRoleInput.placeholder = "Job Role";
+  jobRoleInput.style.cssText = `
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
+
+  const specificInterviewLabel = document.createElement("label");
+  specificInterviewLabel.textContent = "Job Specialty Interview Prompt:";
+  specificInterviewLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  const specificInterviewInput = document.createElement("input");
+  specificInterviewInput.type = "text";
+  specificInterviewInput.placeholder = "Specific Interview";
+  specificInterviewInput.style.cssText = `
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;  
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
+
+  const extraInteviewPromptLabel = document.createElement("label");
+  extraInteviewPromptLabel.textContent = "Extra Interview Prompt:";
+  extraInteviewPromptLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  const extraInteviewPromptInput = document.createElement("input");
+  extraInteviewPromptInput.type = "text";
+  extraInteviewPromptInput.placeholder = "Extra Interview Prompt";
+  extraInteviewPromptInput.style.cssText = `
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;    
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
 
   const closeButton = document.createElement("span");
   closeButton.innerHTML = "&times;";
@@ -333,21 +383,38 @@ export function createConfigModal(OPENAI_API_KEY, OPENAI_MODEL) {
   });
 
 
-  apiKeyInput.value = OPENAI_API_KEY;
+  apiKeyInput.value = apiKey;
   configModal.appendChild(closeButton);
 
   configModal.appendChild(apiKeyLabel);
   configModal.appendChild(apiKeyInput);
 
-  openaiModelInput.value = OPENAI_MODEL;
+
+
+  openaiModelInput.value = aiModel;
   configModal.appendChild(modelLabel);
   configModal.appendChild(openaiModelInput);
 
-  configModal.appendChild(textareaLabel);
-  configModal.appendChild(textarea);
+  jobRoleInput.value = jobRole;
+  configModal.appendChild(jobRoleLabel);
+  configModal.appendChild(jobRoleInput);
+
+  specificInterviewInput.value = jobSpecialy;
+  configModal.appendChild(specificInterviewLabel);
+  configModal.appendChild(specificInterviewInput);
+
+  extraInteviewPromptInput.value = extraInterviewPrompt;
+  configModal.appendChild(extraInteviewPromptLabel);
+  configModal.appendChild(extraInteviewPromptInput);
+
+  // configModal.appendChild(textareaLabel);
+  // configModal.appendChild(textarea);
 
   configModal.appendChild(saveConfigBtn);
-  return {configModal, apiKeyInput, textarea, saveConfigBtn, openaiModelInput} 
+  return {configModal, apiKeyInput,
+    saveConfigBtn,  openaiModelInput, 
+    jobRoleInput, specificInterviewInput,
+     extraInteviewPromptInput} 
 }
 
 

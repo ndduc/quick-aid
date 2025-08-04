@@ -1,17 +1,23 @@
-import { fetchGPTResponse, sendImageToGPT } from './open-ai.js';
-import {loadConfig, saveConfig, getApiKey, saveApiKey} from './config.js'
+import { 
+  fetchGPTResponse, sendImageToGPT,
+  generateInterviewPayload, generateInterviewPayloadForScreenshotMode} from './open-ai.js';
+import {
+  getApiKey, getJobRole, 
+  getJobSpecialy, getExtraInterviewPrompt, 
+  getOpenAiModel} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
 import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal} from './ui.js'
 
-let OPENAI_API_KEY = getApiKey();
+let apiKey = getApiKey();
 
 let lastLine = "";
 const transcriptLog = new Set();
 
-let messages = loadConfig().messages;
-let messagesScreenshootMode =loadConfig().messagesScreenshootMode;
-let programLangForCoding = loadConfig().programLangForCoding;
-let OPENAI_MODEL = loadConfig().defaultOpenAiModel;
+let aiModel = getOpenAiModel();
+let jobRole = getJobRole();
+let jobSpecialy = getJobSpecialy();
+let extraInterviewPrompt = getExtraInterviewPrompt();
+
 
 let isDragging = false, offsetX = 0, offsetY = 0;
 let isMinimized = false;
@@ -149,7 +155,13 @@ document.addEventListener("contextmenu", (e) => {
       const prompt = prefix + selection;
       appendToOverlay(`➡️ You: ${prompt}`);
       appendToOverlay("🧠 GPT: ...thinking");
-      const reply = await fetchGPTResponse(prompt, messages);
+      const reply = await fetchGPTResponse(
+        prompt, 
+        generateInterviewPayload(
+          jobRole, jobSpecialy, extraInterviewPrompt),
+          apiKey,
+          aiModel
+      );
       document.querySelectorAll(".gpt-response").forEach((el) => {
         if (el.textContent === "🧠 GPT: ...thinking") el.remove();
       });
@@ -190,7 +202,14 @@ screenshotBtn.onclick = async () => {
 
     // Send to GPT
     appendToOverlay("🧠 GPT: ...analyzing image");
-    const reply = await sendImageToGPT(dataUrl, messagesScreenshootMode);
+    const reply = await sendImageToGPT(
+      dataUrl, 
+      generateInterviewPayloadForScreenshotMode(
+      jobRole, jobSpecialy, 
+      extraInterviewPrompt),
+      apiKey,
+      aiModel
+    );
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "🧠 GPT: ...analyzing image") el.remove();
     });
@@ -204,17 +223,17 @@ screenshotBtn.onclick = async () => {
 const configBtn = createConfigBtn();
 header.appendChild(configBtn);
 
-const {configModal, apiKeyInput, textarea, saveConfigBtn} = createConfigModal(OPENAI_API_KEY, OPENAI_MODEL);
+const {
+   configModal, apiKeyInput, 
+   saveConfigBtn,
+   openaiModelInput, jobRoleInput, 
+   specificInterviewInput, extraInteviewPromptInput
+  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt);
 document.body.appendChild(configModal);
 
 configBtn.onclick = () => {
   isConfigOpen = !isConfigOpen;
   if (isConfigOpen) {
-    const editable = {
-      messages,
-      messagesScreenshootMode
-    };
-    textarea.value = JSON.stringify(editable, null, 2);
     configModal.style.display = "block";
   } else {
     configModal.style.display = "none";
@@ -224,30 +243,39 @@ configBtn.onclick = () => {
 
 saveConfigBtn.onclick = () => {
   try {
-    const parsed = JSON.parse(textarea.value);
-    if (Array.isArray(parsed.programLangForCoding)) {
-      programLangForCoding.length = 0;
-      programLangForCoding.push(...parsed.programLangForCoding);
-    }
-    if (Array.isArray(parsed.messages)) {
-      messages.length = 0;
-      messages.push(...parsed.messages);
-    }
-    if (Array.isArray(parsed.messagesScreenshootMode)) {
-      messagesScreenshootMode.length = 0;
-      messagesScreenshootMode.push(...parsed.messagesScreenshootMode);
-    }
-
     // Save API Key
     const key = apiKeyInput.value.trim();
     if (key) {
-      OPENAI_API_KEY = key;
+      apiKey = key;
       localStorage.setItem("openaiApiKey", key);
     }
 
+    // save ai model
+    const aiModel = openaiModelInput.value.trim();
+    if (aiModel) {
+      OPENAI_MODEL = aiModel;
+      localStorage.setItem("openaiModel", aiModel);
+    }
 
-    // Save to localStorage
-    localStorage.setItem("gptPromptConfig", JSON.stringify({programLangForCoding, messages, messagesScreenshootMode }));
+    //save job role
+    const jobRole = jobRoleInput.value.trim();
+    if (jobRole) {
+      localStorage.setItem("jobRole", jobRole);
+    }
+
+    //save job specially
+    const jobSpecialy = specificInterviewInput.value.trim();
+    if (jobSpecialy) {
+      localStorage.setItem("jobSpecialy", jobSpecialy);
+    }
+
+    //save extra interview prompt
+    const extraInterviewPrompt = extraInteviewPromptInput.value.trim();
+    if (extraInterviewPrompt) {
+      localStorage.setItem("extraInterviewPrompt", extraInterviewPrompt);
+    }
+
+    
     appendToOverlay("✅ Config saved to localStorage!");
   } catch (e) {
     appendToOverlay("❌ Invalid JSON in config.");
@@ -262,7 +290,12 @@ function submitCustomPrompt() {
   appendToOverlay(`➡️ You: ${value}`);
   appendToOverlay("🧠 GPT: ...thinking");
   input.value = "";
-  fetchGPTResponse(value, messages).then(reply => {
+  fetchGPTResponse(value, generateInterviewPayload(
+    jobRole, jobSpecialy, 
+    extraInterviewPrompt),
+    apiKey,
+    aiModel
+  ).then(reply => {
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "🧠 GPT: ...thinking") el.remove();
     });
