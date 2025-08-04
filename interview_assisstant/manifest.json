@@ -3,7 +3,7 @@
   "name": "QuickAid",
   "version": "1.0",
   "description": "Read transcript from 3rd party plugin like Tactiq, allow user to send to GPT, show overlay response",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": [],
   "host_permissions": ["https://*/*"],
   "content_scripts": [
     {
