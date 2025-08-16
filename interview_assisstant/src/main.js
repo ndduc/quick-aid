@@ -4,8 +4,9 @@ import {
 import {
   getApiKey, getJobRole, 
   getJobSpecialy, getExtraInterviewPrompt, 
-  getOpenAiModel} from './config.js'
+  getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
+import {webSocketService} from './websocket-service.js'
 import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
 let apiKey = getApiKey();
@@ -20,6 +21,9 @@ let extraInterviewPrompt = getExtraInterviewPrompt();
 
 // Verify initial configuration
 verifyConfiguration();
+
+// Initialize WebSocket service and set up classification callback
+setupWebSocketClassification();
 
 
 let isDragging = false, offsetX = 0, offsetY = 0;
@@ -195,8 +199,8 @@ const {
    configModal, apiKeyInput, 
    saveConfigBtn,
    openaiModelInput, jobRoleInput, 
-   specificInterviewInput, extraInteviewPromptInput
-  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt);
+   specificInterviewInput, extraInteviewPromptInput, websocketUrlInput
+  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, getWebSocketBackendUrl());
 document.body.appendChild(configModal);
 
 configBtn.onclick = () => {
@@ -225,6 +229,7 @@ function refreshConfigValues() {
   jobRoleInput.value = jobRole;
   specificInterviewInput.value = jobSpecialy;
   extraInteviewPromptInput.value = extraInterviewPrompt;
+  websocketUrlInput.value = getWebSocketBackendUrl();
   
   console.log("Config refreshed:", { apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt });
 }
@@ -238,6 +243,72 @@ function verifyConfiguration() {
   console.log("Job Specialty:", jobSpecialy);
   console.log("Extra Prompt:", extraInterviewPrompt);
   console.log("================================");
+}
+
+// Function to setup WebSocket classification handling
+function setupWebSocketClassification() {
+  // Set callback for when classification results are received
+  webSocketService.setClassificationCallback((result) => {
+    displayClassificationResult(result);
+  });
+
+  // Log WebSocket connection status
+  console.log('🔌 WebSocket status:', webSocketService.getConnectionStatus());
+}
+
+// Function to display classification results in the middle panel
+function displayClassificationResult(result) {
+  const blankPanel = document.getElementById('blank-panel');
+  if (!blankPanel) return;
+
+  const { transcriptId, text, classification, confidence, suggestions } = result;
+  
+  // Create classification result element
+  const resultElement = document.createElement('div');
+  resultElement.style.cssText = `
+    padding: 8px;
+    margin: 4px 0;
+    border-left: 4px solid #007bff;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+  `;
+
+  // Format confidence as percentage
+  const confidencePercent = (confidence * 100).toFixed(1);
+  
+  // Create the result content
+  resultElement.innerHTML = `
+    <div style="font-weight: bold; color: #007bff; margin-bottom: 4px;">
+      🏷️ ${classification} (${confidencePercent}%)
+    </div>
+    <div style="color: #666; margin-bottom: 4px; font-style: italic;">
+      "${text.length > 60 ? text.substring(0, 60) + '...' : text}"
+    </div>
+    ${suggestions && suggestions.length > 0 ? `
+      <div style="margin-top: 4px;">
+        <strong>Suggestions:</strong>
+        <ul style="margin: 2px 0; padding-left: 16px;">
+          ${suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+        </ul>
+      </div>
+    ` : ''}
+    <div style="font-size: 10px; color: #999; margin-top: 4px;">
+      ID: ${transcriptId}
+    </div>
+  `;
+
+  // Add to the top of the blank panel
+  blankPanel.insertBefore(resultElement, blankPanel.firstChild);
+  
+  // Limit the number of results to prevent overflow
+  const maxResults = 20;
+  while (blankPanel.children.length > maxResults) {
+    blankPanel.removeChild(blankPanel.lastChild);
+  }
+
+  // Scroll to top to show latest result
+  blankPanel.scrollTop = 0;
 }
 
 
@@ -277,6 +348,14 @@ saveConfigBtn.onclick = () => {
     if (newExtraInterviewPrompt) {
       extraInterviewPrompt = newExtraInterviewPrompt; // Update global variable
       localStorage.setItem("extraInterviewPrompt", newExtraInterviewPrompt);
+    }
+
+    // Save WebSocket backend URL
+    const newWebSocketUrl = websocketUrlInput.value.trim();
+    if (newWebSocketUrl) {
+      saveWebSocketBackendUrl(newWebSocketUrl);
+      // Update WebSocket service with new URL
+      webSocketService.updateBackendUrl(newWebSocketUrl);
     }
 
     // Close config modal after saving

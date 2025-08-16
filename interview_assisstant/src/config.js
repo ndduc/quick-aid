@@ -71,3 +71,11 @@ export function getJobSpecialy() {
 export function getExtraInterviewPrompt() {
   return localStorage.getItem("extraInterviewPrompt") || "";
 }
+
+export function getWebSocketBackendUrl() {
+  return localStorage.getItem("websocketBackendUrl") || "ws://localhost:8080/ws/transcript";
+}
+
+export function saveWebSocketBackendUrl(url) {
+  localStorage.setItem("websocketBackendUrl", url);
+}

@@ -159,7 +159,7 @@ export function createConfigBtn() {
 }
 
 //  CONFIGURATION MODAL (MODEL - DIALOG)
-export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt) {
+export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, websocketBackendUrl) {
   const configModal = document.createElement("div");
   configModal.style.cssText = `
     display: none;
@@ -323,6 +323,23 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     box-sizing: border-box;
   `;
 
+  const websocketUrlLabel = document.createElement("label");
+  websocketUrlLabel.textContent = "WebSocket Backend URL:";
+  websocketUrlLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  const websocketUrlInput = document.createElement("input");
+  websocketUrlInput.type = "text";
+  websocketUrlInput.placeholder = "ws://localhost:8080/ws/transcript";
+  websocketUrlInput.style.cssText = `
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;    
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
+
   const closeButton = document.createElement("span");
   closeButton.innerHTML = "&times;";
   closeButton.style.cssText = `
@@ -416,6 +433,10 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   configModal.appendChild(extraInteviewPromptLabel);
   configModal.appendChild(extraInteviewPromptInput);
 
+  websocketUrlInput.value = websocketBackendUrl || "ws://localhost:8080/ws/transcript";
+  configModal.appendChild(websocketUrlLabel);
+  configModal.appendChild(websocketUrlInput);
+
   // configModal.appendChild(textareaLabel);
   // configModal.appendChild(textarea);
 
@@ -423,7 +444,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   return {configModal, apiKeyInput,
     saveConfigBtn,  openaiModelInput, 
     jobRoleInput, specificInterviewInput,
-     extraInteviewPromptInput} 
+     extraInteviewPromptInput, websocketUrlInput} 
 }
 
 export function createDualContentLayout() {
@@ -471,7 +492,7 @@ export function createDualContentLayout() {
   `;
 
   const blankLabel = document.createElement("div");
-  blankLabel.textContent = "📋 Blank Panel";
+  blankLabel.textContent = "🏷️ Real-time Classification";
   blankLabel.style.cssText = `
     font-weight: bold;
     margin-bottom: 8px;
