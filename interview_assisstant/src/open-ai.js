@@ -103,7 +103,7 @@ export async function sendImageToGPT(imageDataUrl, messagesScreenshootMode, apiK
     temperature: 0.2,
     model: aiModel,
     messages: visionMessages,
-    max_tokens: 200,
+    max_tokens: 10000,
   };
 
   let url = openAiUrl;

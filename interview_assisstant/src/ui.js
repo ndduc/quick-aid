@@ -4,7 +4,7 @@ export function createOverlay() {
     position: fixed;
     top: 10px;
     right: 10px;
-    width: 400px;
+    width: 800px;
     height: 600px;
     resize: both;
     overflow: auto;
@@ -73,10 +73,11 @@ export function createContentArea() {
       // max-height: 420px;
   contentArea.style.cssText = `
     overflow-y: auto;
-    padding: 10px;
+    padding: 8px;
     white-space: pre-wrap;
     user-select: text;
     -webkit-user-select: text;
+    flex: 1;
   `;
   contentArea.id = "content-area-id";
   return contentArea;
@@ -416,5 +417,123 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     jobRoleInput, specificInterviewInput,
      extraInteviewPromptInput} 
 }
+
+export function createDualContentLayout() {
+  // Create a container for the two content areas
+  const contentContainer = document.createElement("div");
+  contentContainer.style.cssText = `
+    display: flex;
+    gap: 10px;
+    height: calc(100% - 120px);
+    padding: 8px;
+  `;
+
+  // Left content area for GPT responses
+  const gptResponseArea = createContentArea();
+  gptResponseArea.style.cssText += `
+    background: #f8f9fa;
+  `;
+  gptResponseArea.id = "gpt-response-area";
+
+  // Right content area for transcript only
+  const transcriptArea = createContentArea();
+  transcriptArea.style.cssText += `
+    background: #fafafa;
+  `;
+  transcriptArea.id = "transcript-area";
+
+  // Add labels for each area
+  const gptLabel = document.createElement("div");
+  gptLabel.textContent = "🧠 GPT Responses";
+  gptLabel.style.cssText = `
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+    text-align: center;
+    padding: 4px;
+    background: #d1ecf1;
+    border-radius: 4px;
+  `;
+
+  const transcriptLabel = document.createElement("div");
+  transcriptLabel.textContent = "📝 Live Transcript";
+  transcriptLabel.style.cssText = `
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+    text-align: center;
+    padding: 4px;
+    background: #e9ecef;
+    border-radius: 4px;
+  `;
+
+  // Create wrapper divs for each area with labels
+  const gptWrapper = document.createElement("div");
+  gptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  gptWrapper.appendChild(gptLabel);
+  gptWrapper.appendChild(gptResponseArea);
+
+  const transcriptWrapper = document.createElement("div");
+  transcriptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  transcriptWrapper.appendChild(transcriptLabel);
+  transcriptWrapper.appendChild(transcriptArea);
+
+  contentContainer.appendChild(gptWrapper);
+  contentContainer.appendChild(transcriptWrapper);
+
+  return {
+    contentContainer,
+    gptResponseArea,
+    transcriptArea
+  };
+}
+
+export function createGPTContextMenu(e, options, onOptionClick) {
+  const menu = document.createElement("div");
+  menu.style.cssText = `
+    position: fixed;
+    top: ${e.pageY}px;
+    left: ${e.pageX}px;
+    background: #fefefe;
+    border: 1px solid #ccc;
+    padding: 4px;
+    font-size: 13px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000000;
+  `;
+
+  options.forEach(({ label, prefix }) => {
+    const item = document.createElement("div");
+    item.textContent = label;
+    item.style.cssText = `
+      padding: 6px 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    `;
+    item.onmouseenter = () => item.style.background = "#eee";
+    item.onmouseleave = () => item.style.background = "transparent";
+    item.onclick = () => onOptionClick(prefix, label);
+    menu.appendChild(item);
+  });
+
+  return menu;
+}
+
+export const CONTEXT_MENU_OPTIONS = [
+  { label: "💬 Ask GPT about this", prefix: "" },
+  {
+    label: "📘 Explain briefly (interview-friendly)",
+    prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
+  },
+  {
+    label: "🛠️ Real-world use case (interview-friendly)",
+    prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
+  },
+  {
+    label: "🧩 Explain + Use Case (interview-friendly)",
+    prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
+  },
+];
 
 

@@ -6,7 +6,7 @@ import {
   getJobSpecialy, getExtraInterviewPrompt, 
   getOpenAiModel} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
-import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal} from './ui.js'
+import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
 let apiKey = getApiKey();
 
@@ -42,7 +42,7 @@ document.addEventListener("mousemove", (e) => {
   const rect = overlay.getBoundingClientRect();
   const newWidth = e.clientX - rect.left;
   const newHeight = e.clientY - rect.top;
-  if (newWidth > 300) overlay.style.width = `${newWidth}px`;    // min width
+  if (newWidth > 600) overlay.style.width = `${newWidth}px`;    // min width for dual content areas
   if (newHeight > 200) overlay.style.height = `${newHeight}px`;  // min height
 });
 
@@ -57,8 +57,11 @@ const {header} = createHeader();
 overlay.appendChild(header);
 
 // === Scrollable Content Area ===
-const contentArea = createContentArea();
-overlay.appendChild(contentArea);
+const {contentContainer, gptResponseArea, transcriptArea} = createDualContentLayout();
+overlay.appendChild(contentContainer);
+
+// Left panel is now ready for GPT responses
+
 
 // === Bottom Input Section ===
 const {inputSection, input, askBtn, screenshotBtn} = createInputSection(submitCustomPrompt);
@@ -68,7 +71,7 @@ askBtn.onclick = submitCustomPrompt;
 //   if (e.key === "Enter") submitCustomPrompt();
 // });
 
-overlay.appendChild(contentArea);
+// Removed duplicate line
 
 // === SCREENSHOT Button Logic ===
 inputSection.appendChild(screenshotBtn);
@@ -110,66 +113,28 @@ document.addEventListener("contextmenu", (e) => {
   if (selection.length === 0) return;
 
 
-  const options = [
-    { label: "💬 Ask GPT about this", prefix: "" },
-    {
-      label: "📘 Explain briefly (interview-friendly)",
-      prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
-    },
-    {
-      label: "🛠️ Real-world use case (interview-friendly)",
-      prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
-    },
-    {
-      label: "🧩 Explain + Use Case (interview-friendly)",
-      prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
-    },
-  ];
+  const options = CONTEXT_MENU_OPTIONS;
 
 
-  const menu = document.createElement("div");
-  menu.style.cssText = `
-    position: fixed;
-    top: ${e.pageY}px;
-    left: ${e.pageX}px;
-    background: #fefefe;
-    border: 1px solid #ccc;
-    padding: 4px;
-    font-size: 13px;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 1000000;
-  `;
+  const onOptionClick = async (prefix, label) => {
+    const prompt = prefix + selection;
+    appendToOverlay(`➡️ You: ${prompt}`, false); // User input goes to right panel
+    appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
+    const reply = await fetchGPTResponse(
+      prompt, 
+      generateInterviewPayload(
+        jobRole, jobSpecialy, extraInterviewPrompt),
+        apiKey,
+        aiModel
+    );
+    document.querySelectorAll(".gpt-response").forEach((el) => {
+      if (el.textContent === "🧠 GPT: ...thinking") el.remove();
+    });
+    appendToOverlay(reply, true); // GPT response goes to left panel
+    menu.remove();
+  };
 
-  options.forEach(({ label, prefix }) => {
-    const item = document.createElement("div");
-    item.textContent = label;
-    item.style.cssText = `
-      padding: 6px 8px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-    `;
-    item.onmouseenter = () => item.style.background = "#eee";
-    item.onmouseleave = () => item.style.background = "transparent";
-    item.onclick = async () => {
-      const prompt = prefix + selection;
-      appendToOverlay(`➡️ You: ${prompt}`);
-      appendToOverlay("🧠 GPT: ...thinking");
-      const reply = await fetchGPTResponse(
-        prompt, 
-        generateInterviewPayload(
-          jobRole, jobSpecialy, extraInterviewPrompt),
-          apiKey,
-          aiModel
-      );
-      document.querySelectorAll(".gpt-response").forEach((el) => {
-        if (el.textContent === "🧠 GPT: ...thinking") el.remove();
-      });
-      appendToOverlay(reply, true);
-      menu.remove();
-    };
-    menu.appendChild(item);
-  });
+  const menu = createGPTContextMenu(e, options, onOptionClick);
 
   document.body.appendChild(menu);
 
@@ -201,7 +166,7 @@ screenshotBtn.onclick = async () => {
     appendImageToOverlay(dataUrl);
 
     // Send to GPT
-    appendToOverlay("🧠 GPT: ...analyzing image");
+    appendToOverlay("🧠 GPT: ...analyzing image", true); // GPT thinking goes to left panel
     const reply = await sendImageToGPT(
       dataUrl, 
       generateInterviewPayloadForScreenshotMode(
@@ -213,7 +178,7 @@ screenshotBtn.onclick = async () => {
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "🧠 GPT: ...analyzing image") el.remove();
     });
-    appendToOverlay(reply, true);
+    appendToOverlay(reply, true); // GPT response goes to left panel
   } catch (err) {
     console.error("Screenshot failed:", err);
     appendToOverlay("⚠️ Failed to capture screenshot.");
@@ -287,8 +252,8 @@ saveConfigBtn.onclick = () => {
 function submitCustomPrompt() {
   const value = "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: " + input.value.trim();
   if (!value) return;
-  appendToOverlay(`➡️ You: ${value}`);
-  appendToOverlay("🧠 GPT: ...thinking");
+  appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
+  appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
   input.value = "";
   fetchGPTResponse(value, generateInterviewPayload(
     jobRole, jobSpecialy, 
@@ -299,7 +264,7 @@ function submitCustomPrompt() {
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "🧠 GPT: ...thinking") el.remove();
     });
-    appendToOverlay(reply, true);
+    appendToOverlay(reply, true); // GPT response goes to left panel
   });
 }
 
@@ -309,30 +274,8 @@ function appendImageToOverlay(dataUrl) {
   const img = document.createElement("img");
   img.src = dataUrl;
   img.style.cssText = "max-width: 100%; margin: 8px 0; border: 1px solid #ccc;";
-  contentArea.appendChild(img);
-  contentArea.scrollTop = contentArea.scrollHeight;
-}
-
-
-
-function appendToOverlay(text, isGPT = false) {
-  const isAtBottom =
-    contentArea.scrollHeight - contentArea.scrollTop <= contentArea.clientHeight + 20;
-
-  const p = document.createElement("div");
-  p.textContent = isGPT ? `🧠 GPT: ${text}` : text;
-  p.style.marginBottom = "8px";
-  p.style.cursor = "text";
-  p.style.userSelect = "text";
-  p.style.webkitUserSelect = "text";
-  p.className = isGPT ? "gpt-response" : "transcript-line";
-
-  contentArea.appendChild(p);
-
-  // Only scroll to bottom if user hasn't scrolled up
-  if (isAtBottom) {
-    contentArea.scrollTop = contentArea.scrollHeight;
-  }
+  gptResponseArea.appendChild(img);
+  gptResponseArea.scrollTop = gptResponseArea.scrollHeight;
 }
 
 
@@ -362,7 +305,33 @@ function updateLivePreview(text) {
 
   livePreviewElement.textContent = text;
 
-  // Move it to the bottom of the content area
-  contentArea.appendChild(livePreviewElement);
-  contentArea.scrollTop = contentArea.scrollHeight;
+  // Move it to the bottom of the transcript area (right panel)
+  transcriptArea.appendChild(livePreviewElement);
+  transcriptArea.scrollTop = transcriptArea.scrollHeight;
+}
+
+function appendToOverlay(text, isGPT = false) {
+  // GPT responses go to left panel, transcript goes to right panel
+  const targetArea = isGPT ? gptResponseArea : transcriptArea;
+  
+  // Debug: log which panel we're using
+  console.log(`appendToOverlay: isGPT=${isGPT}, targetArea=`, targetArea.id, `text=`, text.substring(0, 50));
+  
+  const isAtBottom =
+    targetArea.scrollHeight - targetArea.scrollTop <= targetArea.clientHeight + 20;
+
+  const p = document.createElement("div");
+  p.textContent = isGPT ? `🧠 GPT: ${text}` : text;
+  p.style.marginBottom = "8px";
+  p.style.cursor = "text";
+  p.style.userSelect = "text";
+  p.style.webkitUserSelect = "text";
+  p.className = isGPT ? "gpt-response" : "transcript-line";
+
+  targetArea.appendChild(p);
+
+  // Only scroll to bottom if user hasn't scrolled up
+  if (isAtBottom) {
+    targetArea.scrollTop = targetArea.scrollHeight;
+  }
 }
