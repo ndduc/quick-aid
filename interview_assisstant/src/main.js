@@ -45,7 +45,7 @@ document.addEventListener("mousemove", (e) => {
   const rect = overlay.getBoundingClientRect();
   const newWidth = e.clientX - rect.left;
   const newHeight = e.clientY - rect.top;
-  if (newWidth > 600) overlay.style.width = `${newWidth}px`;    // min width for dual content areas
+  if (newWidth > 900) overlay.style.width = `${newWidth}px`;    // min width for three content areas
   if (newHeight > 200) overlay.style.height = `${newHeight}px`;  // min height
 });
 

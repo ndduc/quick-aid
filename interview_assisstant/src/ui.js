@@ -4,7 +4,7 @@ export function createOverlay() {
     position: fixed;
     top: 10px;
     right: 10px;
-    width: 800px;
+    width: 1200px;
     height: 600px;
     resize: both;
     overflow: auto;
@@ -427,7 +427,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
 }
 
 export function createDualContentLayout() {
-  // Create a container for the two content areas
+  // Create a container for the three content areas
   const contentContainer = document.createElement("div");
   contentContainer.style.cssText = `
     display: flex;
@@ -442,6 +442,13 @@ export function createDualContentLayout() {
     background: #f8f9fa;
   `;
   gptResponseArea.id = "gpt-response-area";
+
+  // Middle blank panel (do nothing with it)
+  const blankPanel = createContentArea();
+  blankPanel.style.cssText += `
+    background: #f0f0f0;
+  `;
+  blankPanel.id = "blank-panel";
 
   // Right content area for transcript only
   const transcriptArea = createContentArea();
@@ -463,6 +470,18 @@ export function createDualContentLayout() {
     border-radius: 4px;
   `;
 
+  const blankLabel = document.createElement("div");
+  blankLabel.textContent = "📋 Blank Panel";
+  blankLabel.style.cssText = `
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+    text-align: center;
+    padding: 4px;
+    background: #e2e3e5;
+    border-radius: 4px;
+  `;
+
   const transcriptLabel = document.createElement("div");
   transcriptLabel.textContent = "📝 Live Transcript";
   transcriptLabel.style.cssText = `
@@ -481,12 +500,18 @@ export function createDualContentLayout() {
   gptWrapper.appendChild(gptLabel);
   gptWrapper.appendChild(gptResponseArea);
 
+  const blankWrapper = document.createElement("div");
+  blankWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  blankWrapper.appendChild(blankLabel);
+  blankWrapper.appendChild(blankPanel);
+
   const transcriptWrapper = document.createElement("div");
   transcriptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
   transcriptWrapper.appendChild(transcriptLabel);
   transcriptWrapper.appendChild(transcriptArea);
 
   contentContainer.appendChild(gptWrapper);
+  contentContainer.appendChild(blankWrapper);
   contentContainer.appendChild(transcriptWrapper);
 
   return {
