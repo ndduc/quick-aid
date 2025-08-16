@@ -252,9 +252,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   modelLabel.textContent = "AI Model:";
   modelLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const openaiModelInput = document.createElement("input");
-  openaiModelInput.type = "text";
-  openaiModelInput.placeholder = "AI Model";
+  const openaiModelInput = document.createElement("select");
   openaiModelInput.style.cssText = `
     width: 100%;
     margin-bottom: 10px;
@@ -264,6 +262,15 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     border-radius: 4px;
     box-sizing: border-box;
   `;
+  
+  // Add model options
+  const models = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5o", "gpt-5o-mini"];
+  models.forEach(model => {
+    const option = document.createElement("option");
+    option.value = model;
+    option.textContent = model;
+    openaiModelInput.appendChild(option);
+  });
 
   const jobRoleLabel = document.createElement("label");
   jobRoleLabel.textContent = "Job Role:";
@@ -392,6 +399,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
 
 
 
+  // Set the selected model
   openaiModelInput.value = aiModel;
   configModal.appendChild(modelLabel);
   configModal.appendChild(openaiModelInput);

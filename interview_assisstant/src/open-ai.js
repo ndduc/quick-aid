@@ -1,126 +1,168 @@
-// gpt-api.js
+// OpenAI API Service - Handles all GPT interactions
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
-const openAiUrl = "https://api.openai.com/v1/chat/completions";
+// ============================================================================
+// MODEL CONFIGURATION
+// ============================================================================
+
+const MODEL_MAPPING = {
+  "gpt-4o": "gpt-4o",
+  "gpt-4o-mini": "gpt-4o-mini",
+  "gpt-5": "gpt-5",
+  "gpt-5o": "gpt-5o",
+  "gpt-5o-mini": "gpt-5o-mini"
+};
+
+function getModelName(aiModel) {
+  // If it's a known GPT model, use it directly
+  if (MODEL_MAPPING[aiModel]) {
+    return MODEL_MAPPING[aiModel];
+  }
+  
+  // If it contains "gpt-5", use GPT-5
+  if (aiModel.includes("gpt-5")) {
+    return "gpt-5";
+  }
+  
+  // If it contains "gpt-4", use GPT-4o (default)
+  if (aiModel.includes("gpt-4")) {
+    return "gpt-4o";
+  }
+  
+  // Default fallback to GPT-4o
+  return "gpt-4o";
+}
+
+// ============================================================================
+// PROMPT GENERATION FUNCTIONS
+// ============================================================================
 
 export function generateInterviewPayload(jobRole, specialty, extraPrompt) {
-  var messages = [
-      {
-        role: "system",
-        content: `You are an experienced ${jobRole} helping someone prepare for a job interview. 
-        Answer questions clearly and concisely. Specialize in ${specialty}.
-         ${extraPrompt}`
-      }
-      // ,
-      // {
-      //   role: "user",
-      //   content: question
-      // }
+  return [
+    {
+      role: "system",
+      content: `You are an experienced ${jobRole} helping someone prepare for a job interview. 
+      Answer questions clearly and concisely. Specialize in ${specialty}.
+      ${extraPrompt}`
+    }
   ];
-  return messages;
 }
 
 export function generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt) {
-    var messages = [
-      {
-        role: "system",
-        content: `You are an experienced ${jobRole} helping someone prepare for a job interview. 
-        Completed the coding challenge. Specialize in ${specialty}.
-         ${extraPrompt}`
-      }
-      // ,
-      // {
-      //   role: "user",
-      //   content: question
-      // }
-    ];
-  return messages;
-}
-
-
-export async function fetchGPTResponse(question, messages, apiKey, aiModel) {
-  messages.push({ role: "user", content: question });
-
-  if (aiModel.includes("gpt")) {
-    aiModel = "gpt-4-turbo" 
-  }
-  const payload = {
-    temperature: 0.2,
-    max_tokens: 150,
-    model: aiModel,
-    messages: messages,
-  };
-
-  let url = openAiUrl;
-  if (aiModel.includes("gpt")) {
-    url = openAiUrl;
-  }
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json();
-  const reply = data?.choices?.[0]?.message?.content || "No response";
-  messages.push({ role: "assistant", content: reply });
-  return reply;
-}
-
-export async function sendImageToGPT(imageDataUrl, messagesScreenshootMode, apiKey, aiModel) {
-  const base64 = imageDataUrl.split(",")[1];
-
-  // let langNote = "Javascript";
-  // try {
-  //   const config = JSON.parse(localStorage.getItem("gptPromptConfig"));
-  //   const langs = config?.programLangForCoding || [];
-  //   if (langs.length > 0) langNote = `\nPreferred language(s): ${langs.join(", ")}.\n`;
-  // } catch (e) {
-  //   console.warn("Failed to load language config", e);
-  // }
-
-  const visionMessages = [
-    ...messagesScreenshootMode,
+  return [
     {
-      role: "user",
-      content: [
-//         {
-//           type: "text",
-//           text: `IF the content is a coding challenge, solve it.
-// Focus on solving, and explain briefly. Add comments where needed. Programming Language: ${langNote}`
-//         },
-        {
-          type: "image_url",
-          image_url: { url: `data:image/png;base64,${base64}` }
-        }
-      ]
+      role: "system",
+      content: `You are an experienced ${jobRole} helping someone prepare for a job interview. 
+      Completed the coding challenge. Specialize in ${specialty}.
+      ${extraPrompt}`
     }
   ];
+}
 
-  const payload = {
-    temperature: 0.2,
-    model: aiModel,
-    messages: visionMessages,
-    max_tokens: 10000,
+// ============================================================================
+// API CONFIGURATION
+// ============================================================================
+
+function getApiConfig(apiKey, aiModel, maxTokens = 4000) {
+  return {
+    temperature: 0.1,
+    max_tokens: maxTokens,
+    model: getModelName(aiModel),
+    messages: [],
+    top_p: 0.9,
+    frequency_penalty: 0.1,
+    presence_penalty: 0.1,
   };
+}
 
-  let url = openAiUrl;
-  if (aiModel.includes("gpt")) {
-    url = openAiUrl;
+function getApiHeaders(apiKey) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  };
+}
+
+// ============================================================================
+// CORE API FUNCTIONS
+// ============================================================================
+
+export async function fetchGPTResponse(question, messages, apiKey, aiModel) {
+  try {
+    // Add user question to messages
+    const updatedMessages = [...messages, { role: "user", content: question }];
+    
+    // Prepare API payload with higher token limit for detailed responses
+    const payload = {
+      ...getApiConfig(apiKey, aiModel, 4000),
+      messages: updatedMessages,
+    };
+
+    // Make API call
+    const response = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: getApiHeaders(apiKey),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const reply = data?.choices?.[0]?.message?.content || "No response from API";
+    
+    // Add assistant response to messages for context
+    updatedMessages.push({ role: "assistant", content: reply });
+    
+    return reply;
+  } catch (error) {
+    console.error("Error fetching GPT response:", error);
+    return `Error: ${error.message}`;
   }
+}
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+export async function sendImageToGPT(imageDataUrl, messagesScreenshotMode, apiKey, aiModel) {
+  try {
+    // Extract base64 data from data URL
+    const base64 = imageDataUrl.split(",")[1];
+    
+    // Prepare vision messages
+    const visionMessages = [
+      ...messagesScreenshotMode,
+      {
+        role: "user",
+        content: [
+          {
+            type: "image_url",
+            image_url: { url: `data:image/png;base64,${base64}` }
+          }
+        ]
+      }
+    ];
 
-  const data = await res.json();
-  const reply = data?.choices?.[0]?.message?.content || "No response from API.";
-  return reply;
+    // Prepare API payload for vision model with high token limit for detailed analysis
+    const payload = {
+      ...getApiConfig(apiKey, aiModel, 8000),
+      messages: visionMessages,
+    };
+
+    // Make API call
+    const response = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: getApiHeaders(apiKey),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const reply = data?.choices?.[0]?.message?.content || "No response from API";
+    
+    return reply;
+  } catch (error) {
+    console.error("Error sending image to GPT:", error);
+    return `Error: ${error.message}`;
+  }
 }

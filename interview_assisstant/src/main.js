@@ -18,6 +18,9 @@ let jobRole = getJobRole();
 let jobSpecialy = getJobSpecialy();
 let extraInterviewPrompt = getExtraInterviewPrompt();
 
+// Verify initial configuration
+verifyConfiguration();
+
 
 let isDragging = false, offsetX = 0, offsetY = 0;
 let isMinimized = false;
@@ -199,11 +202,43 @@ document.body.appendChild(configModal);
 configBtn.onclick = () => {
   isConfigOpen = !isConfigOpen;
   if (isConfigOpen) {
+    // Refresh config values from localStorage when opening
+    refreshConfigValues();
     configModal.style.display = "block";
   } else {
     configModal.style.display = "none";
   }
 };
+
+// Function to refresh configuration values from localStorage
+function refreshConfigValues() {
+  // Reload values from localStorage
+  apiKey = getApiKey();
+  aiModel = getOpenAiModel();
+  jobRole = getJobRole();
+  jobSpecialy = getJobSpecialy();
+  extraInterviewPrompt = getExtraInterviewPrompt();
+  
+  // Update input fields with current values
+  apiKeyInput.value = apiKey;
+  openaiModelInput.value = aiModel;
+  jobRoleInput.value = jobRole;
+  specificInterviewInput.value = jobSpecialy;
+  extraInteviewPromptInput.value = extraInterviewPrompt;
+  
+  console.log("Config refreshed:", { apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt });
+}
+
+// Function to verify configuration is properly loaded
+function verifyConfiguration() {
+  console.log("=== Configuration Verification ===");
+  console.log("API Key:", apiKey ? "Set (" + apiKey.substring(0, 10) + "...)" : "Not set");
+  console.log("AI Model:", aiModel);
+  console.log("Job Role:", jobRole);
+  console.log("Job Specialty:", jobSpecialy);
+  console.log("Extra Prompt:", extraInterviewPrompt);
+  console.log("================================");
+}
 
 
 saveConfigBtn.onclick = () => {
@@ -215,35 +250,45 @@ saveConfigBtn.onclick = () => {
       localStorage.setItem("openaiApiKey", key);
     }
 
-    // save ai model
-    const aiModel = openaiModelInput.value.trim();
-    if (aiModel) {
-      OPENAI_MODEL = aiModel;
-      localStorage.setItem("openaiModel", aiModel);
+    // Save AI model
+    const newAiModel = openaiModelInput.value.trim();
+    if (newAiModel) {
+      aiModel = newAiModel; // Update global variable
+      localStorage.setItem("openaiModel", newAiModel);
+      console.log("AI Model saved:", newAiModel, "Current aiModel variable:", aiModel);
     }
 
-    //save job role
-    const jobRole = jobRoleInput.value.trim();
-    if (jobRole) {
-      localStorage.setItem("jobRole", jobRole);
+    // Save job role
+    const newJobRole = jobRoleInput.value.trim();
+    if (newJobRole) {
+      jobRole = newJobRole; // Update global variable
+      localStorage.setItem("jobRole", newJobRole);
     }
 
-    //save job specially
-    const jobSpecialy = specificInterviewInput.value.trim();
-    if (jobSpecialy) {
-      localStorage.setItem("jobSpecialy", jobSpecialy);
+    // Save job specialty
+    const newJobSpecialy = specificInterviewInput.value.trim();
+    if (newJobSpecialy) {
+      jobSpecialy = newJobSpecialy; // Update global variable
+      localStorage.setItem("jobSpecialy", newJobSpecialy);
     }
 
-    //save extra interview prompt
-    const extraInterviewPrompt = extraInteviewPromptInput.value.trim();
-    if (extraInterviewPrompt) {
-      localStorage.setItem("extraInterviewPrompt", extraInterviewPrompt);
+    // Save extra interview prompt
+    const newExtraInterviewPrompt = extraInteviewPromptInput.value.trim();
+    if (newExtraInterviewPrompt) {
+      extraInterviewPrompt = newExtraInterviewPrompt; // Update global variable
+      localStorage.setItem("extraInterviewPrompt", newExtraInterviewPrompt);
     }
 
+    // Close config modal after saving
+    isConfigOpen = false;
+    configModal.style.display = "none";
     
-    appendToOverlay("✅ Config saved to localStorage!");
+    // Verify the new configuration
+    verifyConfiguration();
+    
+    appendToOverlay("✅ Config saved and applied! Model: " + aiModel);
   } catch (e) {
-    appendToOverlay("❌ Invalid JSON in config.");
+    appendToOverlay("❌ Error saving config: " + e.message);
     console.error(e);
   }
 };
@@ -255,6 +300,7 @@ function submitCustomPrompt() {
   appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
   appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
   input.value = "";
+  console.log("Making API call with model:", aiModel, "API Key:", apiKey ? "Set" : "Not set");
   fetchGPTResponse(value, generateInterviewPayload(
     jobRole, jobSpecialy, 
     extraInterviewPrompt),

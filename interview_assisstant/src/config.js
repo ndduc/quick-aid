@@ -11,6 +11,15 @@ const defaultScreenshotMessages = [
 const defaultLang = ["Java", "Javascript"];
 let empty_key = "sk-...CHAT_GPT_TOKEN_KEY"; 
 
+// Available OpenAI models
+export const AVAILABLE_MODELS = [
+  "gpt-4o",
+  "gpt-4o-mini", 
+  "gpt-5",
+  "gpt-5o",
+  "gpt-5o-mini"
+];
+
 // export function loadConfig() {
 //   try {
 //     const saved = JSON.parse(localStorage.getItem("gptPromptConfig"));
@@ -35,7 +44,7 @@ let empty_key = "sk-...CHAT_GPT_TOKEN_KEY";
 //   localStorage.setItem("gptPromptConfig", JSON.stringify({
 //     messages,
 //     messagesScreenshootMode,
-//     programLangForCoding
+//       programLangForCoding
 //   }));
 // }
 
@@ -47,9 +56,8 @@ export function saveApiKey(key) {
   localStorage.setItem("openaiApiKey", key);
 }
 
-
 export function getOpenAiModel() {
-  return localStorage.getItem("openaiModel"); 
+  return localStorage.getItem("openaiModel") || "gpt-4o"; 
 }
 
 export function getJobRole() {
