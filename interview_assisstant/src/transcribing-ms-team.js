@@ -50,7 +50,7 @@ import { webSocketService } from './websocket-service.js';
 // ============================================================================
 // Set this to true to use the old live transcribe mode instead of MS Teams mode
 // Set this to false to use the new MS Teams caption extraction mode
-const USE_OLD_LIVE_TRANSCRIBE_MODE = true; // 🔧 Developer setting
+const USE_OLD_LIVE_TRANSCRIBE_MODE = false; // 🔧 Developer setting
 
 // ============================================================================
 // STATE VARIABLES
