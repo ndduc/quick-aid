@@ -53,6 +53,18 @@ export function createHeader() {
   `;
   header.textContent = "Interview Assistant";
 
+  // Add MS Teams status indicator
+  const msTeamsStatus = document.createElement("span");
+  msTeamsStatus.id = "ms-teams-status";
+  msTeamsStatus.textContent = "🎯";
+  msTeamsStatus.title = "MS Teams: Not Detected";
+  msTeamsStatus.style.cssText = `
+    margin-left: auto;
+    font-size: 14px;
+    cursor: help;
+  `;
+  header.appendChild(msTeamsStatus);
+
   // const minimizeBtn = document.createElement("button");
   // minimizeBtn.textContent = "–";
   // minimizeBtn.style.cssText = `
@@ -64,7 +76,7 @@ export function createHeader() {
   // `;
   // header.appendChild(minimizeBtn);
 
-  return {header};
+  return {header, msTeamsStatus};
 }
 
 
@@ -130,16 +142,72 @@ export function createInputSection(submitCustomPrompt) {
     cursor: pointer;
   `;
 
+  const msTeamsTestBtn = document.createElement("button");
+  msTeamsTestBtn.textContent = "🎯";
+  msTeamsTestBtn.title = "Test MS Teams Caption";
+  msTeamsTestBtn.style.cssText = `
+    padding: 6px 8px;
+    font-size: 16px;
+    background: #6f42c1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+
+  const statusBtn = document.createElement("button");
+  statusBtn.textContent = "🔌";
+  statusBtn.title = "Check WebSocket Status";
+  statusBtn.style.cssText = `
+    padding: 6px 8px;
+    font-size: 16px;
+    background: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+
+  const clearDuplicatesBtn = document.createElement("button");
+  clearDuplicatesBtn.textContent = "🧹";
+  clearDuplicatesBtn.title = "Clear Duplicates";
+  clearDuplicatesBtn.style.cssText = `
+    padding: 6px 8px;
+    font-size: 16px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+
+  const modeStatusBtn = document.createElement("button");
+  modeStatusBtn.textContent = "🔄";
+  modeStatusBtn.title = "Show Transcription Mode Status";
+  modeStatusBtn.style.cssText = `
+    padding: 6px 8px;
+    font-size: 16px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  `;
+
   inputSection.appendChild(input);
   inputSection.appendChild(askBtn);
   inputSection.appendChild(screenshotBtn);
+  inputSection.appendChild(msTeamsTestBtn);
+  inputSection.appendChild(statusBtn);
+  inputSection.appendChild(clearDuplicatesBtn);
+  inputSection.appendChild(modeStatusBtn);
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitCustomPrompt();
   });
 
 
-  return {inputSection, input, askBtn, screenshotBtn}
+  return {inputSection, input, askBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn}
 } 
 
 

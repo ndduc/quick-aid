@@ -7,6 +7,7 @@ import {
   getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
 import {webSocketService} from './websocket-service.js'
+import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
 import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
 let apiKey = getApiKey();
@@ -24,6 +25,9 @@ verifyConfiguration();
 
 // Initialize WebSocket service and set up classification callback
 setupWebSocketClassification();
+
+// Initialize MS Teams monitoring if meeting is detected
+setupMSTeamsMonitoring();
 
 
 let isDragging = false, offsetX = 0, offsetY = 0;
@@ -60,7 +64,7 @@ document.addEventListener("mouseup", () => {
 
 
 // === Header with Minimize Button ===
-const {header} = createHeader();
+const {header, msTeamsStatus} = createHeader();
 overlay.appendChild(header);
 
 // === Scrollable Content Area ===
@@ -71,9 +75,42 @@ overlay.appendChild(contentContainer);
 
 
 // === Bottom Input Section ===
-const {inputSection, input, askBtn, screenshotBtn} = createInputSection(submitCustomPrompt);
+const {inputSection, input, askBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
 overlay.appendChild(inputSection);
 askBtn.onclick = submitCustomPrompt;
+msTeamsTestBtn.onclick = () => {
+  testMSCaptionProcessing(appendToOverlay, updateLivePreview);
+  
+  // Also display in middle panel for immediate feedback
+  const testText = "This is a test caption from Microsoft Teams";
+  displayTranscriptInMiddlePanel(testText, "Test Speaker");
+};
+
+statusBtn.onclick = () => {
+  checkWebSocketStatus();
+};
+
+clearDuplicatesBtn.onclick = () => {
+  // Import and call the clear duplicates function
+  import('./transcribing-ms-team.js').then(({ clearTranscriptDuplicates }) => {
+    clearTranscriptDuplicates();
+    appendToOverlay("🧹 Duplicates cleared from transcript and middle panel", true);
+  }).catch(err => {
+    console.error('Failed to import clearTranscriptDuplicates:', err);
+    appendToOverlay("❌ Failed to clear duplicates", true);
+  });
+};
+
+modeStatusBtn.onclick = () => {
+  // Import and call the mode status function
+  import('./transcribing-ms-team.js').then(({ displayTranscriptionModeStatus }) => {
+    const statusText = displayTranscriptionModeStatus();
+    appendToOverlay(statusText, true);
+  }).catch(err => {
+    console.error('Failed to import displayTranscriptionModeStatus:', err);
+    appendToOverlay("❌ Failed to get mode status", true);
+  });
+};
 // input.addEventListener("keydown", (e) => {
 //   if (e.key === "Enter") submitCustomPrompt();
 // });
@@ -256,6 +293,85 @@ function setupWebSocketClassification() {
   console.log('🔌 WebSocket status:', webSocketService.getConnectionStatus());
 }
 
+// Function to setup MS Teams monitoring
+function setupMSTeamsMonitoring() {
+  // Try to auto-detect and initialize MS Teams monitoring
+  const teamsInitialized = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
+  
+  if (teamsInitialized) {
+    console.log('🎯 MS Teams monitoring initialized successfully');
+    
+    // Log monitoring status
+    const status = getMSTeamsMonitoringStatus();
+    console.log('📊 MS Teams monitoring status:', status);
+    
+    // Update status indicator
+    updateMSTeamsStatus(true);
+  } else {
+    console.log('ℹ️ MS Teams meeting not detected - monitoring will start when meeting is detected');
+    
+    // Set up periodic detection for when user joins a Teams meeting
+    setInterval(() => {
+      if (!getMSTeamsMonitoringStatus().isMonitoring) {
+        const detected = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
+        if (detected) {
+          console.log('🎯 MS Teams meeting detected and monitoring started');
+          updateMSTeamsStatus(true);
+        }
+      }
+    }, 10000); // Check every 10 seconds
+    
+    // Update status indicator every 5 seconds
+    setInterval(() => {
+      const status = getMSTeamsMonitoringStatus();
+      updateMSTeamsStatus(status.isMonitoring);
+    }, 5000);
+    
+    // Check WebSocket status and show offline transcript data every 10 seconds
+    setInterval(() => {
+      const wsStatus = webSocketService.getConnectionStatus();
+      if (!wsStatus.isConnected) {
+        // WebSocket is offline, show a status message in middle panel
+        const blankPanel = document.getElementById('blank-panel');
+        if (blankPanel && blankPanel.children.length === 0) {
+          const offlineMsg = document.createElement('div');
+          offlineMsg.style.cssText = `
+            padding: 16px;
+            margin: 16px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+          `;
+          offlineMsg.innerHTML = `
+            <div style="font-size: 16px; margin-bottom: 8px;">🔌 WebSocket Offline</div>
+            <div style="font-size: 12px;">Transcript data will appear here when connection is restored</div>
+            <div style="font-size: 10px; margin-top: 8px;">Click 🔌 button to check status</div>
+          `;
+          blankPanel.appendChild(offlineMsg);
+        }
+      }
+    }, 10000);
+  }
+}
+
+// Function to update MS Teams status indicator
+function updateMSTeamsStatus(isActive) {
+  if (!msTeamsStatus) return;
+  
+  if (isActive) {
+    msTeamsStatus.textContent = "🎯";
+    msTeamsStatus.title = "MS Teams: Active & Monitoring";
+    msTeamsStatus.style.color = "#28a745"; // Green
+  } else {
+    msTeamsStatus.textContent = "🎯";
+    msTeamsStatus.title = "MS Teams: Not Detected";
+    msTeamsStatus.style.color = "#6c757d"; // Gray
+  }
+}
+
 // Function to display classification results in the middle panel
 function displayClassificationResult(result) {
   const blankPanel = document.getElementById('blank-panel');
@@ -309,6 +425,98 @@ function displayClassificationResult(result) {
 
   // Scroll to top to show latest result
   blankPanel.scrollTop = 0;
+}
+
+// Function to display transcript data in middle panel (fallback when WebSocket not connected)
+function displayTranscriptInMiddlePanel(text, author = 'Unknown Speaker') {
+  // Make function globally available for other modules
+  window.displayTranscriptInMiddlePanel = displayTranscriptInMiddlePanel;
+  const blankPanel = document.getElementById('blank-panel');
+  if (!blankPanel) return;
+
+  // Create transcript display element
+  const transcriptElement = document.createElement('div');
+  transcriptElement.style.cssText = `
+    padding: 8px;
+    margin: 4px 0;
+    border-left: 4px solid #6c757d;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+  `;
+
+  // Create the transcript content
+  transcriptElement.innerHTML = `
+    <div style="font-weight: bold; color: #6c757d; margin-bottom: 4px;">
+      📝 Transcript (WebSocket Offline)
+    </div>
+    <div style="color: #666; margin-bottom: 4px; font-style: italic;">
+      <strong>${author}:</strong> "${text.length > 60 ? text.substring(0, 60) + '...' : text}"
+    </div>
+    <div style="font-size: 10px; color: #999; margin-top: 4px;">
+      Timestamp: ${new Date().toLocaleTimeString()}
+    </div>
+  `;
+
+  // Add to the top of the blank panel
+  blankPanel.insertBefore(transcriptElement, blankPanel.firstChild);
+  
+  // Limit the number of results to prevent overflow
+  const maxResults = 20;
+  while (blankPanel.children.length > maxResults) {
+    blankPanel.removeChild(blankPanel.lastChild);
+  }
+
+  // Scroll to top to show latest result
+  blankPanel.scrollTop = 0;
+}
+
+// Function to check and display WebSocket status
+function checkWebSocketStatus() {
+  const status = webSocketService.getConnectionStatus();
+  const blankPanel = document.getElementById('blank-panel');
+  if (!blankPanel) return;
+
+  // Create status display element
+  const statusElement = document.createElement('div');
+  statusElement.style.cssText = `
+    padding: 8px;
+    margin: 4px 0;
+    border-left: 4px solid ${status.isConnected ? '#28a745' : '#dc3545'};
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+  `;
+
+  // Create the status content
+  statusElement.innerHTML = `
+    <div style="font-weight: bold; color: ${status.isConnected ? '#28a745' : '#dc3545'}; margin-bottom: 4px;">
+      🔌 WebSocket Status: ${status.isConnected ? 'Connected' : 'Disconnected'}
+    </div>
+    <div style="color: #666; margin-bottom: 4px;">
+      <strong>Ready State:</strong> ${status.readyState}
+    </div>
+    <div style="color: #666; margin-bottom: 4px;">
+      <strong>Reconnect Attempts:</strong> ${status.reconnectAttempts}
+    </div>
+    <div style="font-size: 10px; color: #999; margin-top: 4px;">
+      Checked: ${new Date().toLocaleTimeString()}
+    </div>
+  `;
+
+  // Add to the top of the blank panel
+  blankPanel.insertBefore(statusElement, blankPanel.firstChild);
+  
+  // Limit the number of results to prevent overflow
+  const maxResults = 20;
+  while (blankPanel.children.length > maxResults) {
+    blankPanel.removeChild(blankPanel.lastChild);
+  }
+
+  // Scroll to top to show latest result
+  blankPanel.scrollTop = 0;
+
+  console.log('🔌 WebSocket Status Check:', status);
 }
 
 
