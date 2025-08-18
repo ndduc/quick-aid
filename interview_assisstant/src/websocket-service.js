@@ -55,6 +55,8 @@ class WebSocketService {
 
       if (message.type === 'CLASSIFICATION_RESULT') {
         this.handleClassificationResult(message);
+      } else if (message.type === 'QUESTION') {
+        this.handleQuestionMessage(message);
       } else if (message.type === 'ERROR') {
         console.error('❌ Backend error:', message.error);
       } else {
@@ -84,6 +86,34 @@ class WebSocketService {
       classification,
       confidence: confidence ? `${(confidence * 100).toFixed(1)}%` : 'N/A',
       suggestions: suggestions?.length || 0
+    });
+  }
+
+  // Handle question messages and immediately set to middle panel
+  handleQuestionMessage(message) {
+    const { text, transcriptId, originalQuestion, userFLName} = message;
+    
+    // Immediately append the question text to the middle panel
+    const middlePanel = document.getElementById('blank-panel');
+    if (middlePanel) {
+      const timestamp = new Date().toLocaleTimeString();
+      const questionEntry = `[${timestamp} - ${userFLName}]\nQuestion: ${originalQuestion || 'No question provided'}\nAnswer: ${text || 'No answer provided'}\n\n`;
+      
+      // Append new question to existing content
+      middlePanel.textContent += questionEntry;
+      
+      // Auto-scroll to bottom to show latest question
+      middlePanel.scrollTop = middlePanel.scrollHeight;
+      
+      console.log(`❓ Question appended to middle panel: ${text?.substring(0, 50)}...`);
+    } else {
+      console.warn('⚠️ Middle panel (blank-panel) not found');
+    }
+
+    // Log the question message
+    console.log(`❓ Question received:`, {
+      transcriptId,
+      text: text?.substring(0, 50) + '...'
     });
   }
 
