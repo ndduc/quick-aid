@@ -7,7 +7,7 @@
   "host_permissions": ["https://*/*"],
   "content_scripts": [
     {
-      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*"],
+      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*", "https://teams.microsoft.com/*"],
       "js": ["content.js"],
       "type": "module"
     }
