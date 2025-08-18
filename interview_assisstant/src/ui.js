@@ -520,9 +520,10 @@ export function createDualContentLayout() {
   const contentContainer = document.createElement("div");
   contentContainer.style.cssText = `
     display: flex;
-    gap: 10px;
+    gap: 0px;
     height: calc(100% - 120px);
     padding: 8px;
+    position: relative;
   `;
 
   // Left content area for GPT responses
@@ -585,22 +586,32 @@ export function createDualContentLayout() {
 
   // Create wrapper divs for each area with labels
   const gptWrapper = document.createElement("div");
-  gptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  gptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; min-width: 200px;";
   gptWrapper.appendChild(gptLabel);
   gptWrapper.appendChild(gptResponseArea);
 
   const blankWrapper = document.createElement("div");
-  blankWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  blankWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; min-width: 200px;";
   blankWrapper.appendChild(blankLabel);
   blankWrapper.appendChild(blankPanel);
 
   const transcriptWrapper = document.createElement("div");
-  transcriptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;";
+  transcriptWrapper.style.cssText = "flex: 1; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; min-width: 200px;";
   transcriptWrapper.appendChild(transcriptLabel);
   transcriptWrapper.appendChild(transcriptArea);
 
+  // Create resize handles
+  const resizeHandle1 = createResizeHandle();
+  const resizeHandle2 = createResizeHandle();
+
+  // Add resize functionality
+  setupResizeHandle(resizeHandle1, gptWrapper, blankWrapper);
+  setupResizeHandle(resizeHandle2, blankWrapper, transcriptWrapper);
+
   contentContainer.appendChild(gptWrapper);
+  contentContainer.appendChild(resizeHandle1);
   contentContainer.appendChild(blankWrapper);
+  contentContainer.appendChild(resizeHandle2);
   contentContainer.appendChild(transcriptWrapper);
 
   return {
@@ -608,6 +619,69 @@ export function createDualContentLayout() {
     gptResponseArea,
     transcriptArea
   };
+}
+
+// Create a resize handle element
+function createResizeHandle() {
+  const handle = document.createElement("div");
+  handle.style.cssText = `
+    width: 6px;
+    background: #ddd;
+    cursor: col-resize;
+    border-radius: 3px;
+    margin: 0 2px;
+    position: relative;
+    transition: background-color 0.2s;
+  `;
+  
+  handle.addEventListener("mouseenter", () => {
+    handle.style.background = "#999";
+  });
+  
+  handle.addEventListener("mouseleave", () => {
+    handle.style.background = "#ddd";
+  });
+  
+  return handle;
+}
+
+// Setup resize functionality between two panels
+function setupResizeHandle(handle, leftPanel, rightPanel) {
+  let isResizing = false;
+  let startX = 0;
+  let startLeftWidth = 0;
+  let startRightWidth = 0;
+
+  handle.addEventListener("mousedown", (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startLeftWidth = leftPanel.offsetWidth;
+    startRightWidth = rightPanel.offsetWidth;
+    
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isResizing) return;
+    
+    const deltaX = e.clientX - startX;
+    const newLeftWidth = Math.max(200, startLeftWidth + deltaX);
+    const newRightWidth = Math.max(200, startRightWidth - deltaX);
+    
+    leftPanel.style.flex = `0 0 ${newLeftWidth}px`;
+    rightPanel.style.flex = `0 0 ${newRightWidth}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+  });
 }
 
 export function createGPTContextMenu(e, options, onOptionClick) {
