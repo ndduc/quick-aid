@@ -489,6 +489,7 @@ function checkWebSocketStatus() {
   `;
 
   // Create the status content
+  const queuedMessages = webSocketService.messageQueue ? webSocketService.messageQueue.length : 0;
   statusElement.innerHTML = `
     <div style="font-weight: bold; color: ${status.isConnected ? '#28a745' : '#dc3545'}; margin-bottom: 4px;">
       🔌 WebSocket Status: ${status.isConnected ? 'Connected' : 'Disconnected'}
@@ -498,6 +499,9 @@ function checkWebSocketStatus() {
     </div>
     <div style="color: #666; margin-bottom: 4px;">
       <strong>Reconnect Attempts:</strong> ${status.reconnectAttempts}
+    </div>
+    <div style="color: #666; margin-bottom: 4px;">
+      <strong>Queued Messages:</strong> ${queuedMessages}
     </div>
     <div style="font-size: 10px; color: #999; margin-top: 4px;">
       Checked: ${new Date().toLocaleTimeString()}
@@ -615,6 +619,9 @@ function appendImageToOverlay(dataUrl) {
 
 
 let livePreviewElement = null;
+let livePreviewTimeout = null;
+let lastLivePreviewText = '';
+
 // function updateLivePreview(text) {
 //   if (!livePreviewElement) {
 //     livePreviewElement = document.createElement("div");
@@ -626,6 +633,12 @@ let livePreviewElement = null;
 //   contentArea.scrollTop = contentArea.scrollHeight;
 // }
 function updateLivePreview(text) {
+  // Check if this text is already present in the transcript area
+  if (isDuplicateText(text)) {
+    console.log("🔄 Duplicate text detected in live preview, skipping:", text.substring(0, 50) + "...");
+    return;
+  }
+
   if (!livePreviewElement) {
     livePreviewElement = document.createElement("div");
     livePreviewElement.style.cssText = `
@@ -636,16 +649,113 @@ function updateLivePreview(text) {
     `;
   }
 
+  // Clear any existing timeout
+  if (livePreviewTimeout) {
+    clearTimeout(livePreviewTimeout);
+  }
+
+  // Update the live preview text
   livePreviewElement.textContent = text;
+  lastLivePreviewText = text;
 
   // Move it to the bottom of the transcript area (right panel)
   transcriptArea.appendChild(livePreviewElement);
   transcriptArea.scrollTop = transcriptArea.scrollHeight;
+
+  // Set a new timeout to finalize the text after 5 seconds of inactivity
+  livePreviewTimeout = setTimeout(() => {
+    finalizeLivePreview();
+  }, 5000); // 5 seconds
+}
+
+function finalizeLivePreview() {
+  if (livePreviewElement && lastLivePreviewText.trim()) {
+    console.log("🔄 Starting finalization of idle text:", lastLivePreviewText.substring(0, 50) + "...");
+    
+    // Create a finalized transcript entry
+    const finalizedEntry = document.createElement("div");
+    finalizedEntry.textContent = lastLivePreviewText;
+    finalizedEntry.style.cssText = `
+      margin-top: 10px;
+      padding: 8px;
+      background: #f8f9fa;
+      border-left: 3px solid #28a745;
+      border-radius: 4px;
+      font-weight: normal;
+      opacity: 1;
+      font-style: normal;
+    `;
+    finalizedEntry.className = "transcript-line finalized-transcript";
+
+    // Replace the live preview with the finalized entry
+    if (livePreviewElement.parentNode) {
+      livePreviewElement.parentNode.replaceChild(finalizedEntry, livePreviewElement);
+    }
+
+    // Send finalized text to WebSocket for processing
+    try {
+      console.log("🔍 WebSocket service available:", !!webSocketService);
+      if (webSocketService) {
+        console.log("🔍 WebSocket connection status:", webSocketService.getConnectionStatus());
+        
+        if (webSocketService.isConnected) {
+          const transcriptId = Date.now().toString();
+          const timestamp = new Date().toISOString();
+          webSocketService.sendTranscriptForClassification(transcriptId, lastLivePreviewText, timestamp);
+          console.log("📤 Finalized idle text sent to WebSocket:", lastLivePreviewText.substring(0, 50) + "...");
+        } else {
+          console.warn("⚠️ WebSocket not connected, attempting to send anyway (may be queued)");
+          
+          // Try to send anyway - the service might queue it
+          const transcriptId = Date.now().toString();
+          const timestamp = new Date().toISOString();
+          webSocketService.sendTranscriptForClassification(transcriptId, lastLivePreviewText, timestamp);
+          console.log("📤 Finalized text queued for later transmission:", lastLivePreviewText.substring(0, 50) + "...");
+        }
+      } else {
+        console.error("❌ WebSocket service not available");
+      }
+    } catch (error) {
+      console.error("❌ Error sending finalized text to WebSocket:", error);
+    }
+
+    // Reset the live preview
+    livePreviewElement = null;
+    lastLivePreviewText = '';
+    
+    // Scroll to bottom to show the finalized text
+    transcriptArea.scrollTop = transcriptArea.scrollHeight;
+    
+    console.log("✅ Live preview finalized after 5 seconds of inactivity");
+  }
+}
+
+// Check if text is already present in the transcript area
+function isDuplicateText(text) {
+  if (!text || !text.trim()) return false;
+  
+  const transcriptLines = transcriptArea.querySelectorAll('.transcript-line, .finalized-transcript');
+  
+  for (const line of transcriptLines) {
+    const lineText = line.textContent.trim();
+    // Check for exact match or if the new text is contained within existing text
+    if (lineText === text.trim() || lineText.includes(text.trim()) || text.trim().includes(lineText)) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 function appendToOverlay(text, isGPT = false) {
   // GPT responses go to left panel, transcript goes to right panel
   const targetArea = isGPT ? gptResponseArea : transcriptArea;
+  
+  // Check for duplicates only for transcript text (not GPT responses)
+  if (!isGPT && isDuplicateText(text)) {
+    console.log("🔄 Duplicate text detected in transcript, skipping:", text.substring(0, 50) + "...");
+    return;
+  }
   
   // Debug: log which panel we're using
   console.log(`appendToOverlay: isGPT=${isGPT}, targetArea=`, targetArea.id, `text=`, text.substring(0, 50));
