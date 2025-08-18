@@ -53,7 +53,6 @@ export function createHeader() {
   `;
   header.textContent = "QuikAid";
 
-  // Add MS Teams status indicator
   const msTeamsStatus = document.createElement("span");
   msTeamsStatus.id = "ms-teams-status";
   msTeamsStatus.textContent = "🎯";
@@ -62,6 +61,7 @@ export function createHeader() {
     margin-left: auto;
     font-size: 14px;
     cursor: help;
+    visibility: hidden;
   `;
   header.appendChild(msTeamsStatus);
 
@@ -79,7 +79,7 @@ export function createHeader() {
   `;
   header.appendChild(minimizeBtn);
 
-  return {header, msTeamsStatus, minimizeBtn};
+  return {header, minimizeBtn};
 }
 
 

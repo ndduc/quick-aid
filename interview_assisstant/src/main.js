@@ -64,7 +64,7 @@ document.addEventListener("mouseup", () => {
 
 
 // === Header with Minimize Button ===
-const {header, msTeamsStatus, minimizeBtn} = createHeader();
+const {header, minimizeBtn} = createHeader();
 overlay.appendChild(header);
 
 // Add minimize functionality
