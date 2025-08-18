@@ -10,7 +10,6 @@ let transcriptCounter = 0;
 
 
 export function checkTranscript(transcriptLog, appendToOverlay, updateLivePreview) {
-  console.log("checkTranscript");
   const transcriptElements = document.querySelectorAll(
     'div[data-index][data-known-size]'
   );

@@ -1,77 +1,87 @@
-# QuickAid — Your Real-Time Meeting & Interview Assistant
+# 🚀 QikAid — Your Real-Time Meeting & Interview Copilot  
 
-**QuickAid** is a Chrome extension designed to assist users during live meetings, interviews, and coding challenges by integrating seamlessly with **Tactiq** (caption plugin) and **OpenAI's API**.
+Meetings and interviews can be overwhelming.  
+You’re trying to **listen**, **take notes**, **answer questions**, and **stay sharp** — all at once.  
+That’s where **QikAid** steps in.  
 
-It captures transcribed text from Google Meet (via Tactiq), enables fast AI-driven insights, and even allows screenshot-based question support — all without disrupting your workflow.
-
----
-
-## ✨ Features
-
-- ✅ **Tactiq Integration**: Automatically captures live transcript text from the Tactiq plugin and displays it in the QuickAid assistant panel.
-- 🧠 **AI-Driven Text Answers**: Right-click on any transcribed text and ask OpenAI a follow-up question using pre-defined or custom prompt templates.
-- ⌨️ **Custom Questions**: Manually type in any question to ask OpenAI on the spot.
-- 🖼️ **Screenshot to AI**: Instantly capture part of your screen and send the image to OpenAI for visual-based analysis (great for coding or diagram questions).
-- 💬 **Live Overlay UI**: Floating, draggable UI that keeps your assistant visible but non-intrusive.
+QikAid is your **AI-powered assistant for Microsoft Teams**, designed to **capture every word**, **highlight what matters**, and even **answer questions in real time**.  
+Think of it as your **note-taker, coach, and problem-solver**, working silently beside you.  
 
 ---
 
-## 🔧 Requirements
+## ✨ What Makes QikAid Different?  
 
-- **Tactiq Chrome Extension** must be installed and active during your meeting.
-- **OpenAI API Key** is required to use any AI-powered features.
-  - You can enter your key securely through the extension's configuration modal.
-- Works best on **Google Meet** and other platforms supported by Tactiq.
+Unlike generic note-taking tools, QikAid doesn’t just record your meeting.  
+It **understands the conversation** and actively helps you:  
 
----
+- 🎤 **Crush Interviews**  
+  Nervous about tricky technical or behavioral questions?  
+  QikAid detects questions as they come up and offers **instant AI-powered answers** — giving you confidence on the spot.  
 
-## 🚀 Getting Started
+- 📝 **Smarter Meeting Notes**  
+  Forget messy scribbles. QikAid **captures live captions** directly from Teams and organizes them in a **floating, distraction-free panel**.  
+  At the end of your meeting, you’ll have **structured, clear notes** ready to go.  
 
-1. **Install Tactiq** from the [Chrome Web Store](https://chrome.google.com/webstore/detail/tactiq-transcription-highl/)
-2. **Install QuickAid** (this extension).
-3. Click the QuickAid icon → Open the config modal → Paste your OpenAI API key.
-4. Join a Google Meet and start Tactiq → Transcripts will appear in the QuickAid overlay.
-5. Use right-click on any transcript or type your own question to query OpenAI.
+- ❓ **Real-Time Q&A**  
+  Don’t waste time googling during calls.  
+  Right-click on any line of transcript text, or just type your question into QikAid — AI responds instantly.  
 
----
+- 🖼️ **Screenshot-to-AI**  
+  Stuck on a coding challenge, confusing slide, or messy diagram?  
+  Snap a screenshot → Send it to AI → Get an explanation in seconds.  
 
-## 📸 Screenshot-Based AI Support
-
-- Click the camera icon in QuickAid’s UI to take a screenshot.
-- The image will be sent to OpenAI’s vision model.
-- AI will respond based on the contents of the screenshot (e.g. code, UI, diagrams).
-
----
-
-## 📌 Use Cases
-
-- Live coding interviews (ask for use cases or fixes)
-- Technical meetings (summarize or clarify answers)
-- Product demos (take screenshots and ask for explanations)
-- Job interviews (get quick help answering behavioral or tech questions)
+- 💬 **Always-On Overlay**  
+  QikAid lives in a **clean, draggable UI** that stays with you throughout your meeting.  
+  Always visible when you need it, never distracting when you don’t.  
 
 ---
 
-## 🛡️ Privacy & Security
+## 🛠 How QikAid Works  
 
-- Your OpenAI key is stored **locally** in your browser (not uploaded anywhere).
-- Screenshots and prompts are only sent to OpenAI’s API (with your key).
-- Transcripts are processed **only from your active Meet session** via Tactiq.
-
----
-
-## 🗺️ Roadmap (Coming Soon)
-
-- Native Google Meet caption support (without relying on Tactiq)
-- Conversation history & saving answers
-- Multi-prompt workflows for deeper explanation
+1. Install QikAid and paste in your **OpenAI API key** (securely stored on your device).  
+2. Join a **Microsoft Teams meeting** with captions enabled.  
+3. Watch QikAid automatically **extract live captions** and stream them into its panel.  
+4. Let AI **classify, summarize, and answer questions** as the conversation unfolds.  
+5. Ask custom questions or upload screenshots for deeper insights.  
 
 ---
 
-## 🙋 Support
+## 📌 Who Is QikAid For?  
 
-If you have feedback, suggestions, or issues, please open a GitHub issue or contact the developer.
+- 👩‍💻 **Job Seekers & Interviewees**  
+  Stay calm under pressure. Let QikAid handle live questions so you can focus on connecting with your interviewer.  
+
+- 🧑‍💻 **Developers & Tech Professionals**  
+  Instantly debug code, answer live technical challenges, and capture notes from sprint reviews or stand-ups.  
+
+- 📊 **Business Teams**  
+  Capture smarter notes, auto-highlight questions, and ensure nothing falls through the cracks in client calls or team meetings.  
+
+- 🎓 **Students & Learners**  
+  Use QikAid as your **real-time tutor** in study sessions, online classes, or group discussions.  
 
 ---
 
-> QuickAid is not affiliated with OpenAI or Tactiq. It enhances their functionality for your productivity.
+## 🔒 Privacy & Security  
+
+QikAid is built with **privacy first**:  
+
+- 🔑 Your **OpenAI API key** is stored **locally only** — never uploaded anywhere.  
+- 📝 Captions and screenshots are sent **only to OpenAI’s API** (with your key).  
+- 🎥 QikAid works **only during your active Teams sessions**, never in the background.  
+
+---
+
+## 🌟 Roadmap (Coming Soon)  
+
+- 🖥 **Multi-platform caption capture** (Zoom, Google Meet, and beyond).  
+- 📜 **Save & export conversation history** for easy reference.  
+- 🔄 **Multi-step AI workflows** for deeper explanations and advanced use cases.  
+- 🗂 **Collaboration features** for teams who want shared meeting notes.  
+
+---
+
+🔥 Don’t just **attend meetings** — **master them**.  
+With QikAid, every conversation becomes an opportunity to **learn faster, respond smarter, and stay ahead**.  
+
+👉 Install **QikAid** today and turn meetings, interviews, and coding challenges into your competitive advantage.  
