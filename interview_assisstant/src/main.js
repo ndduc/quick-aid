@@ -141,6 +141,8 @@ overlay.appendChild(contentContainer);
 // === Bottom Input Section ===
 const {inputSection, input, askBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
 overlay.appendChild(inputSection);
+
+
 askBtn.onclick = submitCustomPrompt;
 msTeamsTestBtn.onclick = () => {
   testMSCaptionProcessing(appendToOverlay, updateLivePreview);

@@ -67,7 +67,45 @@ export function createHeader() {
     cursor: move;
     user-select: none;
   `;
-  header.textContent = "QuikAid";
+  // Create title container with version
+  const titleContainer = document.createElement("div");
+  titleContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+  
+  const title = document.createElement("span");
+  title.textContent = "QuikAid";
+  title.style.cssText = `
+    font-weight: bold;
+  `;
+  
+  const version = document.createElement("span");
+  version.style.cssText = `
+    font-size: 10px;
+    color: #6c757d;
+    font-family: monospace;
+    font-weight: normal;
+  `;
+  
+  // Get version from manifest
+  let buildVersion = "v1.0.0"; // fallback
+  try {
+    // Try to get version from manifest
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
+      const manifest = chrome.runtime.getManifest();
+      buildVersion = `v${manifest.version}`;
+    }
+  } catch (error) {
+    console.log("Could not read manifest version, using fallback:", error);
+  }
+  
+  version.textContent = buildVersion;
+  
+  titleContainer.appendChild(title);
+  titleContainer.appendChild(version);
+  header.appendChild(titleContainer);
 
   const msTeamsStatus = document.createElement("span");
   msTeamsStatus.id = "ms-teams-status";
