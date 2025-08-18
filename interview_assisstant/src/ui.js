@@ -159,6 +159,7 @@ export function createInputSection(submitCustomPrompt) {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    margin-left: 8px;
   `;
 
   const msTeamsTestBtn = document.createElement("button");
@@ -172,6 +173,7 @@ export function createInputSection(submitCustomPrompt) {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: none;
   `;
 
   const statusBtn = document.createElement("button");
@@ -185,6 +187,7 @@ export function createInputSection(submitCustomPrompt) {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: none;
   `;
 
   const clearDuplicatesBtn = document.createElement("button");
@@ -198,6 +201,7 @@ export function createInputSection(submitCustomPrompt) {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: none;
   `;
 
   const modeStatusBtn = document.createElement("button");
@@ -211,6 +215,7 @@ export function createInputSection(submitCustomPrompt) {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: none;
   `;
 
   inputSection.appendChild(input);
