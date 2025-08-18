@@ -38,6 +38,22 @@ export function createResizer() {
   return resizer;
 }
 
+export function createLeftResizer() {
+  const leftResizer = document.createElement("div");
+  leftResizer.style.cssText = `
+    width: 14px;
+    height: 14px;
+    background: transparent;
+    border-left: 2px solid #aaa;
+    border-bottom: 2px solid #aaa;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    cursor: sw-resize;
+  `;
+  return leftResizer;
+}
+
 export function createHeader() {
   const header = document.createElement("div");
   header.style.cssText = `

@@ -8,7 +8,7 @@ import {
 import {checkTranscript} from './transcribing-logic.js'
 import {webSocketService} from './websocket-service.js'
 import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
-import {createHeader, createContentArea, createOverlay, createResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
+import {createHeader, createContentArea, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
 let apiKey = getApiKey();
 
@@ -34,6 +34,7 @@ let isDragging = false, offsetX = 0, offsetY = 0;
 let isMinimized = false;
 let isConfigOpen = false;
 let isResizing = false;
+let isLeftResizing = false;
 
 
 // === Overlay Container (shell) ===
@@ -41,20 +42,58 @@ const overlay = createOverlay();
 document.body.appendChild(overlay);
 
 const resizer = createResizer();
+const leftResizer = createLeftResizer();
 overlay.appendChild(resizer);
+overlay.appendChild(leftResizer);
 resizer.addEventListener("mousedown", (e) => {
   e.preventDefault();
   isResizing = true;
   document.body.style.userSelect = "none";
 });
 
+// Left resizer (bottom-left corner)
+leftResizer.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  isResizing = true;
+  isLeftResizing = true;
+  document.body.style.userSelect = "none";
+});
+
+// Right resizer (bottom-right corner)
+resizer.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  isResizing = true;
+  isLeftResizing = false;
+  document.body.style.userSelect = "none";
+});
+
 document.addEventListener("mousemove", (e) => {
   if (!isResizing) return;
+  
   const rect = overlay.getBoundingClientRect();
-  const newWidth = e.clientX - rect.left;
-  const newHeight = e.clientY - rect.top;
-  if (newWidth > 900) overlay.style.width = `${newWidth}px`;    // min width for three content areas
-  if (newHeight > 200) overlay.style.height = `${newHeight}px`;  // min height
+  let newWidth, newHeight;
+  
+  if (isLeftResizing) {
+    // Left resizing: adjust width from left edge and position
+    const currentRight = rect.right;
+    newWidth = currentRight - e.clientX;
+    if (newWidth > 900) {
+      overlay.style.width = `${newWidth}px`;
+      overlay.style.left = `${e.clientX}px`;
+    }
+  } else {
+    // Right resizing: adjust width from right edge
+    newWidth = e.clientX - rect.left;
+    if (newWidth > 900) {
+      overlay.style.width = `${newWidth}px`;
+    }
+  }
+  
+  // Handle height for both cases
+  newHeight = e.clientY - rect.top;
+  if (newHeight > 200) {
+    overlay.style.height = `${newHeight}px`;
+  }
 });
 
 document.addEventListener("mouseup", () => {
