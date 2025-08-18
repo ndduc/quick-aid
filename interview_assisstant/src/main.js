@@ -64,8 +64,33 @@ document.addEventListener("mouseup", () => {
 
 
 // === Header with Minimize Button ===
-const {header, msTeamsStatus} = createHeader();
+const {header, msTeamsStatus, minimizeBtn} = createHeader();
 overlay.appendChild(header);
+
+// Add minimize functionality
+minimizeBtn.addEventListener("click", () => {
+  if (isMinimized) {
+    // Restore the overlay
+    overlay.style.height = "600px";
+    overlay.style.width = "1200px";
+    contentContainer.style.display = "flex";
+    inputSection.style.display = "flex";
+    minimizeBtn.textContent = "–";
+    minimizeBtn.title = "Minimize";
+    isMinimized = false;
+    console.log("🔍 Interview Assistant restored");
+  } else {
+    // Minimize the overlay
+    overlay.style.height = "40px";
+    overlay.style.width = "300px";
+    contentContainer.style.display = "none";
+    inputSection.style.display = "none";
+    minimizeBtn.textContent = "□";
+    minimizeBtn.title = "Restore";
+    isMinimized = true;
+    console.log("🔍 Interview Assistant minimized");
+  }
+});
 
 // === Scrollable Content Area ===
 const {contentContainer, gptResponseArea, transcriptArea} = createDualContentLayout();

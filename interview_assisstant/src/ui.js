@@ -51,7 +51,7 @@ export function createHeader() {
     cursor: move;
     user-select: none;
   `;
-  header.textContent = "Interview Assistant";
+  header.textContent = "QuikAid";
 
   // Add MS Teams status indicator
   const msTeamsStatus = document.createElement("span");
@@ -65,18 +65,21 @@ export function createHeader() {
   `;
   header.appendChild(msTeamsStatus);
 
-  // const minimizeBtn = document.createElement("button");
-  // minimizeBtn.textContent = "–";
-  // minimizeBtn.style.cssText = `
-  //   font-size: 16px;
-  //   padding: 0 8px;
-  //   background: transparent;
-  //   border: none;
-  //   cursor: pointer;
-  // `;
-  // header.appendChild(minimizeBtn);
+  const minimizeBtn = document.createElement("button");
+  minimizeBtn.textContent = "–";
+  minimizeBtn.title = "Minimize";
+  minimizeBtn.style.cssText = `
+    font-size: 16px;
+    padding: 0 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    margin-left: 8px;
+  `;
+  header.appendChild(minimizeBtn);
 
-  return {header, msTeamsStatus};
+  return {header, msTeamsStatus, minimizeBtn};
 }
 
 
@@ -549,7 +552,7 @@ export function createDualContentLayout() {
 
   // Add labels for each area
   const gptLabel = document.createElement("div");
-  gptLabel.textContent = "🧠 GPT Responses";
+  gptLabel.textContent = "AI Responses";
   gptLabel.style.cssText = `
     font-weight: bold;
     margin-bottom: 8px;
@@ -561,7 +564,7 @@ export function createDualContentLayout() {
   `;
 
   const blankLabel = document.createElement("div");
-  blankLabel.textContent = "🏷️ Real-time Classification";
+  blankLabel.textContent = "Real-time Question Classification";
   blankLabel.style.cssText = `
     font-weight: bold;
     margin-bottom: 8px;
@@ -573,7 +576,7 @@ export function createDualContentLayout() {
   `;
 
   const transcriptLabel = document.createElement("div");
-  transcriptLabel.textContent = "📝 Live Transcript";
+  transcriptLabel.textContent = "Live Transcript";
   transcriptLabel.style.cssText = `
     font-weight: bold;
     margin-bottom: 8px;
