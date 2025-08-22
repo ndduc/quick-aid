@@ -8,7 +8,7 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000; // 1 second
-    this.backendUrl = 'wss://3475a7316a1f.ngrok-free.app/ws/transcript'; 
+    this.backendUrl = 'wss://6766aed1eb0b.ngrok-free.app/ws/transcript?access_token=eyJraWQiOiJlcTE2ZTZXN3pWUmdlSmt4VEFFZ2dVSjlPemZHZEt5eld4ZHJpOElBOG1NPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIwODUxNDMwMC02MGQxLTcwMzAtM2I1NC02MzBhZGE0ZDQ3NmYiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9oNjZQRTdpY0MiLCJjbGllbnRfaWQiOiJpcWtvZ2dvcWFjazBiYjJ1MzVzazY4bm03Iiwib3JpZ2luX2p0aSI6IjFhNTMwZTI4LWExNmItNGNjZS1hOTBmLTIzMjQ0NjE5MmUzOCIsImV2ZW50X2lkIjoiMzg2ZDE1Y2UtOTBiNi00YmIxLWIyNTMtZWI4NTY0MjhhNmY4IiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTc1NTg4OTE0MSwiZXhwIjoxNzU1OTc1NTQxLCJpYXQiOjE3NTU4ODkxNDEsImp0aSI6IjIyZjdhZTBlLWIzMmMtNDhiZS04MDUzLTJiNDg0MTY2YzQxNCIsInVzZXJuYW1lIjoiMDg1MTQzMDAtNjBkMS03MDMwLTNiNTQtNjMwYWRhNGQ0NzZmIn0.i2bD2iim98RXYnGckgTX0D4iULT9HD0WS6RBr4o1FTAWgZO38vBEW8tLD0cqoYoUKEVG95JgwvHW8MKqwNd83RWtzMWMQZSdd4PtP6Xz2ibVI096sDAuxeyhu7POXLn-V49Utf9NmKl_tEbgb-wAQcEwncrSJriNy1qHEkxY55Cgp9i7v5_ijlQ5xHqkvU9se-HOKN_T7NHByoKpkue7Ul1tTvq10Rd4xK5hgYulpsE6OmuSO5cOq7Y9TxgivJGHEWpzmpW0Mm7Z1WpLfcD1kf2bgsQCnlY13haujl1UJgbQmDKA61Sh0V5ctN33r23yPuMop1IUNqrK4A-EMnLQtQ';
     this.messageQueue = [];
     this.onClassificationReceived = null;
   }
@@ -70,19 +70,19 @@ class WebSocketService {
 
   // Handle classification results
   handleClassificationResult(message) {
-    const { transcriptId, text, classification, confidence, suggestions } = message;
+    const { transcriptId, aiAnswer, classification, confidence, suggestions } = message;
 
     if (this.onClassificationReceived) {
       this.onClassificationReceived({
         transcriptId,
-        text,
+        aiAnswer,
         classification,
         confidence,
         suggestions
       });
     }
 
-    console.log(`🏷️ Classification for "${text?.substring(0, 50)}...":`, {
+    console.log(`🏷️ Classification for "${aiAnswer?.substring(0, 50)}...":`, {
       classification,
       confidence: confidence ? `${(confidence * 100).toFixed(1)}%` : 'N/A',
       suggestions: suggestions?.length || 0
@@ -91,13 +91,13 @@ class WebSocketService {
 
   // Handle question messages and immediately set to middle panel
   handleQuestionMessage(message) {
-    const { text, transcriptId, originalQuestion, userFLName} = message;
+    const { aiAnswer, transcriptId, originalQuestion, speakerFLName} = message;
     
     // Immediately append the question text to the middle panel
     const middlePanel = document.getElementById('blank-panel');
     if (middlePanel) {
       const timestamp = new Date().toLocaleTimeString();
-      const questionEntry = `[${timestamp} - ${userFLName}]\nQuestion: ${originalQuestion || 'No question provided'}\nAnswer: ${text || 'No answer provided'}\n\n`;
+      const questionEntry = `[${timestamp} - ${speakerFLName}]\nQuestion: ${originalQuestion || 'No question provided'}\nAnswer: ${aiAnswer || 'No answer provided'}\n\n`;
       
       // Append new question to existing content
       middlePanel.textContent += questionEntry;
@@ -105,7 +105,7 @@ class WebSocketService {
       // Auto-scroll to bottom to show latest question
       middlePanel.scrollTop = middlePanel.scrollHeight;
       
-      console.log(`❓ Question appended to middle panel: ${text?.substring(0, 50)}...`);
+      console.log(`❓ Question appended to middle panel: ${aiAnswer?.substring(0, 50)}...`);
     } else {
       console.warn('⚠️ Middle panel (blank-panel) not found');
     }

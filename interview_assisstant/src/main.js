@@ -443,7 +443,7 @@ function displayClassificationResult(result) {
   const blankPanel = document.getElementById('blank-panel');
   if (!blankPanel) return;
 
-  const { transcriptId, text, classification, confidence, suggestions } = result;
+  const { transcriptId, aiAnswer, classification, confidence, suggestions } = result;
   
   // Create classification result element
   const resultElement = document.createElement('div');
@@ -465,7 +465,7 @@ function displayClassificationResult(result) {
       🏷️ ${classification} (${confidencePercent}%)
     </div>
     <div style="color: #666; margin-bottom: 4px; font-style: italic;">
-      "${text.length > 60 ? text.substring(0, 60) + '...' : text}"
+      "${aiAnswer.length > 60 ? aiAnswer.substring(0, 60) + '...' : aiAnswer}"
     </div>
     ${suggestions && suggestions.length > 0 ? `
       <div style="margin-top: 4px;">
