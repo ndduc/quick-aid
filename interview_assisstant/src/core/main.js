@@ -10,6 +10,7 @@ import {webSocketService} from './websocket-service.js'
 import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
 import {createHeader, createContentArea, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
+
 let apiKey = getApiKey();
 
 let lastLine = "";

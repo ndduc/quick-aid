@@ -1,16 +1,36 @@
 // WebSocket Service for Real-time Transcript Classification
 // Connects to Java Spring Boot WebSocket endpoint via ngrok tunnel
+import { getAccessToken } from './token-store.js';
 
 class WebSocketService {
   constructor() {
     this.socket = null;
     this.isConnected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
+    this.maxReconnectAttempts = 1000;
     this.reconnectDelay = 1000; // 1 second
-    this.backendUrl = 'wss://6766aed1eb0b.ngrok-free.app/ws/transcript?access_token=eyJraWQiOiJlcTE2ZTZXN3pWUmdlSmt4VEFFZ2dVSjlPemZHZEt5eld4ZHJpOElBOG1NPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIwODUxNDMwMC02MGQxLTcwMzAtM2I1NC02MzBhZGE0ZDQ3NmYiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9oNjZQRTdpY0MiLCJjbGllbnRfaWQiOiJpcWtvZ2dvcWFjazBiYjJ1MzVzazY4bm03Iiwib3JpZ2luX2p0aSI6IjFhNTMwZTI4LWExNmItNGNjZS1hOTBmLTIzMjQ0NjE5MmUzOCIsImV2ZW50X2lkIjoiMzg2ZDE1Y2UtOTBiNi00YmIxLWIyNTMtZWI4NTY0MjhhNmY4IiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTc1NTg4OTE0MSwiZXhwIjoxNzU1OTc1NTQxLCJpYXQiOjE3NTU4ODkxNDEsImp0aSI6IjIyZjdhZTBlLWIzMmMtNDhiZS04MDUzLTJiNDg0MTY2YzQxNCIsInVzZXJuYW1lIjoiMDg1MTQzMDAtNjBkMS03MDMwLTNiNTQtNjMwYWRhNGQ0NzZmIn0.i2bD2iim98RXYnGckgTX0D4iULT9HD0WS6RBr4o1FTAWgZO38vBEW8tLD0cqoYoUKEVG95JgwvHW8MKqwNd83RWtzMWMQZSdd4PtP6Xz2ibVI096sDAuxeyhu7POXLn-V49Utf9NmKl_tEbgb-wAQcEwncrSJriNy1qHEkxY55Cgp9i7v5_ijlQ5xHqkvU9se-HOKN_T7NHByoKpkue7Ul1tTvq10Rd4xK5hgYulpsE6OmuSO5cOq7Y9TxgivJGHEWpzmpW0Mm7Z1WpLfcD1kf2bgsQCnlY13haujl1UJgbQmDKA61Sh0V5ctN33r23yPuMop1IUNqrK4A-EMnLQtQ';
+    this.backendUrl = 'wss://6766aed1eb0b.ngrok-free.app/ws/transcript?access_token=';
     this.messageQueue = [];
     this.onClassificationReceived = null;
+  }
+
+  async init() {
+    console.log('INIT GET ACCESS TOKEN');
+    // get token (wait if not available yet)
+    this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
+    this.backendUrl = this.backendUrl + this.accessToken;
+    this.connect();
+
+    // if token rotates, reconnect with the new one
+    // onTokenChange(t => {
+    //   const next = t?.access_token;
+    //   if (next && next !== this.accessToken) {
+    //     this.accessToken = next;
+    //     this.#reconnect('token-rotated');
+    //   }
+    // });
+
+    // return this; // so you can: const svc = await new WebSocketService().init()
   }
 
   // Initialize WebSocket connection
@@ -187,7 +207,8 @@ class WebSocketService {
 
   async initialize() {
     console.log('🚀 Initializing WebSocketService...');
-    this.connect();
+    // this.connect();
+    this.init();
   }
 
   updateBackendUrl(newUrl) {
