@@ -9,7 +9,7 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 1000;
     this.reconnectDelay = 1000; // 1 second
-    this.backendUrl = 'wss://6766aed1eb0b.ngrok-free.app/ws/transcript?access_token=';
+    this.backendUrl = 'wss://cdda8fd2e749.ngrok-free.app/ws/transcript?access_token=';
     this.messageQueue = [];
     this.onClassificationReceived = null;
   }
