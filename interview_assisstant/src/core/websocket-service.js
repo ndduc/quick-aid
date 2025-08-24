@@ -109,6 +109,9 @@ class WebSocketService {
     
     console.log(`🛑 Meeting session ended: ${this.currentSessionId}`);
     
+    // Send custom meeting ended message
+    this.sendCustomMessage('MEETING HAS ENDED');
+    
     // Send session end message
     this.sendSessionMessage('SESSION_END', {
       sessionId: this.currentSessionId,
@@ -142,6 +145,25 @@ class WebSocketService {
     } else {
       this.messageQueue.push(message);
       console.log(`📋 Session message queued: ${type}`);
+    }
+  }
+
+  // Send custom messages
+  sendCustomMessage(text) {
+    const message = {
+      type: 'CUSTOM_MESSAGE',
+      text: text,
+      timestamp: new Date().toISOString(),
+      source: 'interview-assistant',
+      sessionId: this.currentSessionId
+    };
+
+    if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message));
+      console.log(`📤 Sent custom message: ${text}`);
+    } else {
+      this.messageQueue.push(message);
+      console.log(`📋 Custom message queued: ${text}`);
     }
   }
 
