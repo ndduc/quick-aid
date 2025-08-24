@@ -40,8 +40,6 @@ let isLeftResizing = false;
 
 // === Overlay Container (shell) ===
 const overlay = createOverlay();
-// Start hidden - only show when meeting is detected
-overlay.style.display = "none";
 document.body.appendChild(overlay);
 
 const resizer = createResizer();
@@ -109,8 +107,19 @@ document.addEventListener("mouseup", () => {
 const {header, minimizeBtn} = createHeader();
 overlay.appendChild(header);
 
-// Plugin UI is completely hidden by default - only shows during meetings
-console.log("🎯 Interview Assistant started - UI hidden until meeting detected");
+// Developer Feature Flag for Auto UI Management
+const AUTO_UI_MANAGEMENT_ENABLED = false; // Set to false to always show UI
+
+// Plugin UI behavior based on feature flag
+if (AUTO_UI_MANAGEMENT_ENABLED) {
+  // UI completely hidden by default - only shows during meetings
+  overlay.style.display = "none";
+  console.log("🎯 Interview Assistant started - Auto UI Management ENABLED - UI hidden until meeting detected");
+} else {
+  // UI always visible (traditional behavior)
+  overlay.style.display = "block";
+  console.log("🎯 Interview Assistant started - Auto UI Management DISABLED - UI always visible");
+}
 
 // Add minimize functionality
 minimizeBtn.addEventListener("click", () => {
@@ -604,15 +613,20 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
     statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
   }
   
-  // Automatically show/hide plugin UI based on meeting status
-  if (isInMeeting) {
-    // Meeting started - show plugin UI
-    overlay.style.display = "block";
-    console.log("🎯 Plugin UI shown for meeting");
+  // Automatically show/hide plugin UI based on meeting status (if feature flag enabled)
+  if (AUTO_UI_MANAGEMENT_ENABLED) {
+    if (isInMeeting) {
+      // Meeting started - show plugin UI
+      overlay.style.display = "block";
+      console.log("🎯 Plugin UI shown for meeting");
+    } else {
+      // Meeting ended - hide plugin UI completely
+      overlay.style.display = "none";
+      console.log("⏹️ Plugin UI hidden after meeting");
+    }
   } else {
-    // Meeting ended - hide plugin UI completely
-    overlay.style.display = "none";
-    console.log("⏹️ Plugin UI hidden after meeting");
+    // Feature flag disabled - UI state unchanged
+    console.log("🚫 Auto UI management disabled - UI state unchanged");
   }
 }
 
