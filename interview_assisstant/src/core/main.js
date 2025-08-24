@@ -40,6 +40,8 @@ let isLeftResizing = false;
 
 // === Overlay Container (shell) ===
 const overlay = createOverlay();
+// Start hidden - only show when meeting is detected
+overlay.style.display = "none";
 document.body.appendChild(overlay);
 
 const resizer = createResizer();
@@ -106,6 +108,9 @@ document.addEventListener("mouseup", () => {
 // === Header with Minimize Button ===
 const {header, minimizeBtn} = createHeader();
 overlay.appendChild(header);
+
+// Plugin UI is completely hidden by default - only shows during meetings
+console.log("🎯 Interview Assistant started - UI hidden until meeting detected");
 
 // Add minimize functionality
 minimizeBtn.addEventListener("click", () => {
@@ -597,6 +602,17 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
     statusBtn.textContent = isInMeeting ? "🎯" : "⏹️";
     statusBtn.title = isInMeeting ? `Active Meeting - ${sessionId?.substring(0, 8)}...` : "No Active Meeting";
     statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
+  }
+  
+  // Automatically show/hide plugin UI based on meeting status
+  if (isInMeeting) {
+    // Meeting started - show plugin UI
+    overlay.style.display = "block";
+    console.log("🎯 Plugin UI shown for meeting");
+  } else {
+    // Meeting ended - hide plugin UI completely
+    overlay.style.display = "none";
+    console.log("⏹️ Plugin UI hidden after meeting");
   }
 }
 
