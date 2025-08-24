@@ -118,6 +118,13 @@ minimizeBtn.addEventListener("click", () => {
     minimizeBtn.textContent = "–";
     minimizeBtn.title = "Minimize";
     isMinimized = false;
+    
+    // Re-enable resize functionality
+    resizer.style.pointerEvents = "auto";
+    leftResizer.style.pointerEvents = "auto";
+    resizer.style.cursor = "nw-resize";
+    leftResizer.style.cursor = "ne-resize";
+    
     console.log("🔍 Interview Assistant restored");
   } else {
     // Minimize the overlay
@@ -128,6 +135,13 @@ minimizeBtn.addEventListener("click", () => {
     minimizeBtn.textContent = "□";
     minimizeBtn.title = "Restore";
     isMinimized = true;
+    
+    // Disable resize functionality when minimized
+    resizer.style.pointerEvents = "none";
+    leftResizer.style.pointerEvents = "none";
+    resizer.style.cursor = "default";
+    leftResizer.style.cursor = "default";
+    
     console.log("🔍 Interview Assistant minimized");
   }
 });
@@ -135,6 +149,12 @@ minimizeBtn.addEventListener("click", () => {
 // === Scrollable Content Area ===
 const {contentContainer, gptResponseArea, transcriptArea} = createDualContentLayout();
 overlay.appendChild(contentContainer);
+
+// Ensure resize functionality is initially enabled
+resizer.style.pointerEvents = "auto";
+leftResizer.style.pointerEvents = "auto";
+resizer.style.cursor = "nw-resize";
+leftResizer.style.cursor = "ne-resize";
 
 // Left panel is now ready for GPT responses
 

@@ -129,6 +129,37 @@ class WebSocketService {
     
     // Close WebSocket
     this.disconnect();
+    
+    // Clear all chat panels
+    this.clearAllChatPanels();
+  }
+
+  // Clear all chat panels
+  clearAllChatPanels() {
+    console.log('🧹 Clearing all chat panels...');
+    
+    // Clear transcript area (left panel)
+    const transcriptArea = document.getElementById('transcript-area');
+    if (transcriptArea) {
+      transcriptArea.innerHTML = '';
+      console.log('✅ Transcript area cleared');
+    }
+    
+    // Clear middle panel (blank-panel)
+    const middlePanel = document.getElementById('blank-panel');
+    if (middlePanel) {
+      middlePanel.innerHTML = '';
+      console.log('✅ Middle panel cleared');
+    }
+    
+    // Clear GPT response area (right panel)
+    const gptResponseArea = document.getElementById('gpt-response-area');
+    if (gptResponseArea) {
+      gptResponseArea.innerHTML = '';
+      console.log('✅ GPT response area cleared');
+    }
+    
+    console.log('🧹 All chat panels cleared successfully');
   }
 
   // Send session messages
