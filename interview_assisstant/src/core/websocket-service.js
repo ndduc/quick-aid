@@ -12,6 +12,12 @@ class WebSocketService {
     this.backendUrl = 'wss://cdda8fd2e749.ngrok-free.app/ws/transcript?access_token=';
     this.messageQueue = [];
     this.onClassificationReceived = null;
+    
+    // Meeting detection
+    this.isInMeeting = false;
+    this.meetingDetectionInterval = null;
+    this.currentSessionId = null;
+    this.onMeetingStatusChange = null;
   }
 
   async init() {
@@ -20,6 +26,9 @@ class WebSocketService {
     this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
     this.backendUrl = this.backendUrl + this.accessToken;
     this.connect();
+
+    // Start meeting detection
+    this.startMeetingDetection();
 
     // if token rotates, reconnect with the new one
     // onTokenChange(t => {
@@ -31,6 +40,109 @@ class WebSocketService {
     // });
 
     // return this; // so you can: const svc = await new WebSocketService().init()
+  }
+
+  // Start meeting detection service
+  startMeetingDetection() {
+    if (this.meetingDetectionInterval) {
+      return; // Already running
+    }
+
+    console.log('🎯 Starting Teams meeting detection...');
+    
+    // Check every 2 seconds for Teams meeting
+    this.meetingDetectionInterval = setInterval(() => {
+      this.checkTeamsMeeting();
+    }, 2000);
+  }
+
+  // Check if we're in a Teams meeting
+  checkTeamsMeeting() {
+    const meetingIndicators = [
+      'div[data-cid="call-screen-wrapper"]',
+      'div[data-cid="meeting-page"]',
+      'div[data-cid="meeting-container"]'
+    ];
+
+    const isInMeeting = meetingIndicators.some(selector => 
+      document.querySelector(selector)
+    );
+
+    if (isInMeeting && !this.isInMeeting) {
+      // Meeting started
+      console.log('🎯 Teams meeting detected - starting session');
+      this.startMeetingSession();
+    } else if (!isInMeeting && this.isInMeeting) {
+      // Meeting ended
+      console.log('⏹️ Teams meeting ended - closing session');
+      this.endMeetingSession();
+    }
+  }
+
+  // Start meeting session
+  startMeetingSession() {
+    this.isInMeeting = true;
+    this.currentSessionId = `meeting_${Date.now()}`;
+    
+    console.log(`🚀 Meeting session started: ${this.currentSessionId}`);
+    
+    // Ensure WebSocket is connected
+    if (!this.isConnected) {
+      this.connect();
+    }
+    
+    // Send session start message
+    this.sendSessionMessage('SESSION_START', {
+      sessionId: this.currentSessionId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Notify status change
+    if (this.onMeetingStatusChange) {
+      this.onMeetingStatusChange(true, this.currentSessionId);
+    }
+  }
+
+  // End meeting session
+  endMeetingSession() {
+    if (!this.isInMeeting) return;
+    
+    console.log(`🛑 Meeting session ended: ${this.currentSessionId}`);
+    
+    // Send session end message
+    this.sendSessionMessage('SESSION_END', {
+      sessionId: this.currentSessionId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Clear session state
+    this.isInMeeting = false;
+    this.currentSessionId = null;
+    
+    // Notify status change
+    if (this.onMeetingStatusChange) {
+      this.onMeetingStatusChange(false, null);
+    }
+    
+    // Close WebSocket
+    this.disconnect();
+  }
+
+  // Send session messages
+  sendSessionMessage(type, data) {
+    const message = {
+      type: type,
+      ...data,
+      source: 'interview-assistant'
+    };
+
+    if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message));
+      console.log(`📤 Sent session message: ${type}`);
+    } else {
+      this.messageQueue.push(message);
+      console.log(`📋 Session message queued: ${type}`);
+    }
   }
 
   // Initialize WebSocket connection
@@ -144,7 +256,8 @@ class WebSocketService {
       transcriptId,
       text: text.trim(),
       timestamp,
-      source: 'interview-assistant'
+      source: 'interview-assistant',
+      sessionId: this.currentSessionId
     };
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
@@ -165,7 +278,7 @@ class WebSocketService {
       const message = this.messageQueue.shift();
       if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify(message));
-        console.log(`📤 Sent queued message: ${message.text.substring(0, 50)}...`);
+        console.log(`📤 Sent queued message: ${message.text?.substring(0, 50) || 'session message'}...`);
       }
     }
   }
@@ -193,6 +306,20 @@ class WebSocketService {
     }
   }
 
+  // Get meeting status
+  getMeetingStatus() {
+    return {
+      isInMeeting: this.isInMeeting,
+      sessionId: this.currentSessionId,
+      isConnected: this.isConnected
+    };
+  }
+
+  // Set meeting status change callback
+  setMeetingStatusCallback(callback) {
+    this.onMeetingStatusChange = callback;
+  }
+
   setClassificationCallback(callback) {
     this.onClassificationReceived = callback;
   }
@@ -201,7 +328,8 @@ class WebSocketService {
     return {
       isConnected: this.isConnected,
       readyState: this.socket?.readyState || 'CLOSED',
-      reconnectAttempts: this.reconnectAttempts
+      reconnectAttempts: this.reconnectAttempts,
+      meetingStatus: this.getMeetingStatus()
     };
   }
 

@@ -356,6 +356,11 @@ function setupWebSocketClassification() {
     displayClassificationResult(result);
   });
 
+  // Set callback for when meeting status changes
+  webSocketService.setMeetingStatusCallback((isInMeeting, sessionId) => {
+    displayMeetingStatus(isInMeeting, sessionId);
+  });
+
   // Log WebSocket connection status
   console.log('🔌 WebSocket status:', webSocketService.getConnectionStatus());
 }
@@ -538,56 +543,41 @@ function displayTranscriptInMiddlePanel(text, author = 'Unknown Speaker') {
   blankPanel.scrollTop = 0;
 }
 
-// Function to check and display WebSocket status
+// Function to check WebSocket status and display comprehensive information
 function checkWebSocketStatus() {
-  const status = webSocketService.getConnectionStatus();
-  const blankPanel = document.getElementById('blank-panel');
-  if (!blankPanel) return;
-
-  // Create status display element
-  const statusElement = document.createElement('div');
-  statusElement.style.cssText = `
-    padding: 8px;
-    margin: 4px 0;
-    border-left: 4px solid ${status.isConnected ? '#28a745' : '#dc3545'};
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 12px;
-  `;
-
-  // Create the status content
-  const queuedMessages = webSocketService.messageQueue ? webSocketService.messageQueue.length : 0;
-  statusElement.innerHTML = `
-    <div style="font-weight: bold; color: ${status.isConnected ? '#28a745' : '#dc3545'}; margin-bottom: 4px;">
-      🔌 WebSocket Status: ${status.isConnected ? 'Connected' : 'Disconnected'}
-    </div>
-    <div style="color: #666; margin-bottom: 4px;">
-      <strong>Ready State:</strong> ${status.readyState}
-    </div>
-    <div style="color: #666; margin-bottom: 4px;">
-      <strong>Reconnect Attempts:</strong> ${status.reconnectAttempts}
-    </div>
-    <div style="color: #666; margin-bottom: 4px;">
-      <strong>Queued Messages:</strong> ${queuedMessages}
-    </div>
-    <div style="font-size: 10px; color: #999; margin-top: 4px;">
-      Checked: ${new Date().toLocaleTimeString()}
-    </div>
-  `;
-
-  // Add to the top of the blank panel
-  blankPanel.insertBefore(statusElement, blankPanel.firstChild);
+  const wsStatus = webSocketService.getConnectionStatus();
   
-  // Limit the number of results to prevent overflow
-  const maxResults = 20;
-  while (blankPanel.children.length > maxResults) {
-    blankPanel.removeChild(blankPanel.lastChild);
+  const statusInfo = `
+🔌 WebSocket Status:
+📡 Connection: ${wsStatus.isConnected ? '✅ Connected' : '❌ Disconnected'}
+🔄 Ready State: ${wsStatus.readyState}
+🔄 Reconnect Attempts: ${wsStatus.reconnectAttempts}
+
+🎯 Meeting Status:
+📅 In Meeting: ${wsStatus.meetingStatus.isInMeeting ? '✅ Yes' : '❌ No'}
+🆔 Session ID: ${wsStatus.meetingStatus.sessionId || 'None'}
+  `.trim();
+  
+  appendToOverlay(statusInfo, true);
+  
+  // Also log to console for debugging
+  console.log('🔌 WebSocket Status Check:', wsStatus);
+}
+
+// Function to display meeting status changes
+function displayMeetingStatus(isInMeeting, sessionId = null) {
+  const statusText = isInMeeting 
+    ? `🎯 Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
+    : '⏹️ Teams Meeting Ended - Session Closed';
+    
+  appendToOverlay(statusText, true);
+  
+  // Update status button if available
+  if (statusBtn) {
+    statusBtn.textContent = isInMeeting ? "🎯" : "⏹️";
+    statusBtn.title = isInMeeting ? `Active Meeting - ${sessionId?.substring(0, 8)}...` : "No Active Meeting";
+    statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
   }
-
-  // Scroll to top to show latest result
-  blankPanel.scrollTop = 0;
-
-  console.log('🔌 WebSocket Status Check:', status);
 }
 
 
