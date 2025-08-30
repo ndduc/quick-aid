@@ -109,17 +109,17 @@ const {header, minimizeBtn} = createHeader();
 overlay.appendChild(header);
 
 // Developer Feature Flag for Auto UI Management
-const AUTO_UI_MANAGEMENT_ENABLED = true; // Set to false to always show UI
+const AUTO_UI_MANAGEMENT_ENABLED = false; // Set to false to always show UI
 
 // Plugin UI behavior based on feature flag
 if (AUTO_UI_MANAGEMENT_ENABLED) {
   // UI completely hidden by default - only shows during meetings
   overlay.style.display = "none";
-  console.log("🎯 Interview Assistant started - Auto UI Management ENABLED - UI hidden until meeting detected");
+  console.log("Auto UI Management ENABLED - UI hidden until meeting detected");
 } else {
   // UI always visible (traditional behavior)
   overlay.style.display = "block";
-  console.log("🎯 Interview Assistant started - Auto UI Management DISABLED - UI always visible");
+  console.log("uto UI Management DISABLED - UI always visible");
 }
 
 // Add minimize functionality
@@ -139,9 +139,8 @@ minimizeBtn.addEventListener("click", () => {
     leftResizer.style.pointerEvents = "auto";
     resizer.style.cursor = "nw-resize";
     leftResizer.style.cursor = "ne-resize";
-    
-    console.log("🔍 Interview Assistant restored");
-  } else {
+  } 
+  else {
     // Minimize the overlay
     overlay.style.height = "40px";
     overlay.style.width = "300px";
@@ -156,8 +155,6 @@ minimizeBtn.addEventListener("click", () => {
     leftResizer.style.pointerEvents = "none";
     resizer.style.cursor = "default";
     leftResizer.style.cursor = "default";
-    
-    console.log("🔍 Interview Assistant minimized");
   }
 });
 
@@ -375,13 +372,13 @@ function refreshConfigValues() {
 
 // Function to verify configuration is properly loaded
 function verifyConfiguration() {
-  console.log("=== Configuration Verification ===");
-  console.log("API Key:", apiKey ? "Set (" + apiKey.substring(0, 10) + "...)" : "Not set");
-  console.log("AI Model:", aiModel);
-  console.log("Job Role:", jobRole);
-  console.log("Job Specialty:", jobSpecialy);
-  console.log("Extra Prompt:", extraInterviewPrompt);
-  console.log("================================");
+  // console.log("=== Configuration Verification ===");
+  // console.log("API Key:", apiKey ? "Set (" + apiKey.substring(0, 10) + "...)" : "Not set");
+  // console.log("AI Model:", aiModel);
+  // console.log("Job Role:", jobRole);
+  // console.log("Job Specialty:", jobSpecialy);
+  // console.log("Extra Prompt:", extraInterviewPrompt);
+  // console.log("================================");
 }
 
 // Function to setup WebSocket classification handling
@@ -397,7 +394,7 @@ function setupWebSocketClassification() {
   });
 
   // Log WebSocket connection status
-  console.log('🔌 WebSocket status:', webSocketService.getConnectionStatus());
+  console.log('WebSocket status:', webSocketService.getConnectionStatus());
 }
 
 // Function to setup MS Teams monitoring
@@ -406,23 +403,19 @@ function setupMSTeamsMonitoring() {
   const teamsInitialized = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
   
   if (teamsInitialized) {
-    console.log('🎯 MS Teams monitoring initialized successfully');
     
     // Log monitoring status
     const status = getMSTeamsMonitoringStatus();
-    console.log('📊 MS Teams monitoring status:', status);
     
     // Update status indicator
     updateMSTeamsStatus(true);
   } else {
-    console.log('ℹ️ MS Teams meeting not detected - monitoring will start when meeting is detected');
     
     // Set up periodic detection for when user joins a Teams meeting
     setInterval(() => {
       if (!getMSTeamsMonitoringStatus().isMonitoring) {
         const detected = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
         if (detected) {
-          console.log('🎯 MS Teams meeting detected and monitoring started');
           updateMSTeamsStatus(true);
         }
       }
@@ -583,14 +576,14 @@ function checkWebSocketStatus() {
   const wsStatus = webSocketService.getConnectionStatus();
   
   const statusInfo = `
-🔌 WebSocket Status:
-📡 Connection: ${wsStatus.isConnected ? '✅ Connected' : '❌ Disconnected'}
-🔄 Ready State: ${wsStatus.readyState}
-🔄 Reconnect Attempts: ${wsStatus.reconnectAttempts}
+WebSocket Status:
+Connection: ${wsStatus.isConnected ? 'Connected' : 'Disconnected'}
+Ready State: ${wsStatus.readyState}
+Reconnect Attempts: ${wsStatus.reconnectAttempts}
 
-🎯 Meeting Status:
-📅 In Meeting: ${wsStatus.meetingStatus.isInMeeting ? '✅ Yes' : '❌ No'}
-🆔 Session ID: ${wsStatus.meetingStatus.sessionId || 'None'}
+Meeting Status:
+In Meeting: ${wsStatus.meetingStatus.isInMeeting ? 'Yes' : 'No'}
+Session ID: ${wsStatus.meetingStatus.sessionId || 'None'}
   `.trim();
   
   appendToOverlay(statusInfo, true);
@@ -602,8 +595,8 @@ function checkWebSocketStatus() {
 // Function to display meeting status changes
 function displayMeetingStatus(isInMeeting, sessionId = null) {
   const statusText = isInMeeting 
-    ? `🎯 Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
-    : '⏹️ Teams Meeting Ended - Session Closed';
+    ? `Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
+    : '⏹Teams Meeting Ended - Session Closed';
     
   appendToOverlay(statusText, true);
   
@@ -619,18 +612,16 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
     if (isInMeeting) {
       // Meeting started - show plugin UI
       overlay.style.display = "block";
-      console.log("🎯 Plugin UI shown for meeting");
       
       // Automatically setup live captions for the meeting
       setupTeamsLiveCaptions();
     } else {
       // Meeting ended - hide plugin UI completely
       overlay.style.display = "none";
-      console.log("⏹️ Plugin UI hidden after meeting");
     }
   } else {
     // Feature flag disabled - UI state unchanged
-    console.log("🚫 Auto UI management disabled - UI state unchanged");
+    console.log("Auto UI management disabled - UI state unchanged");
   }
 }
 
@@ -656,7 +647,6 @@ saveConfigBtn.onclick = () => {
     if (newAiModel) {
       aiModel = newAiModel; // Update global variable
       localStorage.setItem("openaiModel", newAiModel);
-      console.log("AI Model saved:", newAiModel, "Current aiModel variable:", aiModel);
     }
 
     // Save job role
@@ -709,7 +699,6 @@ function submitCustomPrompt() {
   appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
   appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
   input.value = "";
-  console.log("Making API call with model:", aiModel, "API Key:", apiKey ? "Set" : "Not set");
   fetchGPTResponse(value, generateInterviewPayload(
     jobRole, jobSpecialy, 
     extraInterviewPrompt),
@@ -753,7 +742,6 @@ let lastLivePreviewText = '';
 function updateLivePreview(text) {
   // Check if this text is already present in the transcript area
   if (isDuplicateText(text)) {
-    console.log("🔄 Duplicate text detected in live preview, skipping:", text.substring(0, 50) + "...");
     return;
   }
 
@@ -788,7 +776,6 @@ function updateLivePreview(text) {
 
 function finalizeLivePreview() {
   if (livePreviewElement && lastLivePreviewText.trim()) {
-    console.log("🔄 Starting finalization of idle text:", lastLivePreviewText.substring(0, 50) + "...");
     
     // Create a finalized transcript entry
     const finalizedEntry = document.createElement("div");
@@ -812,29 +799,29 @@ function finalizeLivePreview() {
 
     // Send finalized text to WebSocket for processing
     try {
-      console.log("🔍 WebSocket service available:", !!webSocketService);
+      console.log("WebSocket service available:", !!webSocketService);
       if (webSocketService) {
-        console.log("🔍 WebSocket connection status:", webSocketService.getConnectionStatus());
+        console.log("WebSocket connection status:", webSocketService.getConnectionStatus());
         
         if (webSocketService.isConnected) {
           const transcriptId = Date.now().toString();
           const timestamp = new Date().toISOString();
           webSocketService.sendTranscriptForClassification(transcriptId, lastLivePreviewText, timestamp);
-          console.log("📤 Finalized idle text sent to WebSocket:", lastLivePreviewText.substring(0, 50) + "...");
+          console.log("Finalized idle text sent to WebSocket:", lastLivePreviewText.substring(0, 50) + "...");
         } else {
-          console.warn("⚠️ WebSocket not connected, attempting to send anyway (may be queued)");
+          console.warn("WebSocket not connected, attempting to send anyway (may be queued)");
           
           // Try to send anyway - the service might queue it
           const transcriptId = Date.now().toString();
           const timestamp = new Date().toISOString();
           webSocketService.sendTranscriptForClassification(transcriptId, lastLivePreviewText, timestamp);
-          console.log("📤 Finalized text queued for later transmission:", lastLivePreviewText.substring(0, 50) + "...");
+          console.log("Finalized text queued for later transmission:", lastLivePreviewText.substring(0, 50) + "...");
         }
       } else {
-        console.error("❌ WebSocket service not available");
+        console.error("WebSocket service not available");
       }
     } catch (error) {
-      console.error("❌ Error sending finalized text to WebSocket:", error);
+      console.error("Error sending finalized text to WebSocket:", error);
     }
 
     // Reset the live preview
@@ -843,8 +830,6 @@ function finalizeLivePreview() {
     
     // Scroll to bottom to show the finalized text
     transcriptArea.scrollTop = transcriptArea.scrollHeight;
-    
-    console.log("✅ Live preview finalized after 5 seconds of inactivity");
   }
 }
 
@@ -871,12 +856,9 @@ function appendToOverlay(text, isGPT = false) {
   
   // Check for duplicates only for transcript text (not GPT responses)
   if (!isGPT && isDuplicateText(text)) {
-    console.log("🔄 Duplicate text detected in transcript, skipping:", text.substring(0, 50) + "...");
     return;
   }
   
-  // Debug: log which panel we're using
-  console.log(`appendToOverlay: isGPT=${isGPT}, targetArea=`, targetArea.id, `text=`, text.substring(0, 50));
   
   const isAtBottom =
     targetArea.scrollHeight - targetArea.scrollTop <= targetArea.clientHeight + 20;

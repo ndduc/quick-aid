@@ -1,4 +1,3 @@
-// Keys you showed in the screenshot
 const KEYS = [
     "access_token",
     "id_token",
@@ -7,7 +6,8 @@ const KEYS = [
     "token_type",
     "token_timestamp",
     "user_identifier",
-    "theme"
+    "theme",
+    "cognitoId"
   ];
   
   function sendTokens() {

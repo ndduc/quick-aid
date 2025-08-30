@@ -93,7 +93,6 @@ let runtimeModeOverride = null;
 export function setTranscriptionMode(useOldMode) {
   if (typeof useOldMode === 'boolean') {
     runtimeModeOverride = useOldMode;
-    console.log(`🔄 Transcription mode changed to: ${useOldMode ? 'OLD Live Transcribe' : 'MS Teams Caption'}`);
     
     // If switching to old mode, stop any active MS Teams monitoring
     if (useOldMode && isMonitoring) {
@@ -123,7 +122,6 @@ export function getCurrentTranscriptionMode() {
 // Reset to default mode (removes runtime override)
 export function resetToDefaultMode() {
   runtimeModeOverride = null;
-  console.log('🔄 Transcription mode reset to default:', USE_OLD_LIVE_TRANSCRIBE_MODE ? 'OLD Live Transcribe' : 'MS Teams Caption');
 }
 
 // Display current transcription mode status in the UI
@@ -137,7 +135,6 @@ export function displayTranscriptionModeStatus() {
 🎯 MS Teams Monitoring: ${mode.isOldMode ? 'Disabled' : 'Enabled'}
   `.trim();
   
-  console.log(statusText);
   return statusText;
 }
 
@@ -211,18 +208,14 @@ function extractAuthorName(messageElement) {
 // Start monitoring MS Teams captions
 export function startMSTeamsMonitoring(appendToOverlay, updateLivePreview) {
   if (isMonitoring) {
-    console.log('🔄 MS Teams monitoring already active');
     return;
   }
 
   // Check if we should use the old live transcribe mode
   if (shouldUseOldMode()) {
-    console.log('🔄 Using OLD live transcribe mode (MS Teams monitoring disabled)');
-    console.log('📝 To enable MS Teams mode, set USE_OLD_LIVE_TRANSCRIBE_MODE = false');
     return;
   }
 
-  console.log('🎯 Starting MS Teams caption monitoring...');
   isMonitoring = true;
 
   // Check for captions every 500ms
@@ -230,17 +223,14 @@ export function startMSTeamsMonitoring(appendToOverlay, updateLivePreview) {
     checkMSTeamsCaptions(appendToOverlay, updateLivePreview);
   }, 500);
 
-  console.log('✅ MS Teams monitoring started');
 }
 
 // Stop monitoring MS Teams captions
 export function stopMSTeamsMonitoring() {
   if (!isMonitoring) {
-    console.log('🔄 MS Teams monitoring not active');
     return;
   }
 
-  console.log('🛑 Stopping MS Teams caption monitoring...');
   isMonitoring = false;
 
   if (monitoringInterval) {
@@ -248,7 +238,6 @@ export function stopMSTeamsMonitoring() {
     monitoringInterval = null;
   }
 
-  console.log('✅ MS Teams monitoring stopped');
 }
 
 // Check for new MS Teams captions - behaves exactly like checkTranscript
@@ -347,23 +336,20 @@ export function checkMSTeamsCaptions(appendToOverlay, updateLivePreview) {
 // This function is no longer used - replaced with checkMSTeamsCaptions that behaves like checkTranscript
 // Keeping for reference but not calling it
 function processCaptionContainer(container, index, appendToOverlay, updateLivePreview) {
-  console.log('⚠️ processCaptionContainer is deprecated - use checkMSTeamsCaptions instead');
+  console.log('processCaptionContainer is deprecated - use checkMSTeamsCaptions instead');
 }
 
 // Alternative method: Monitor for new caption elements being added to DOM
 export function startDOMObserver(appendToOverlay, updateLivePreview) {
   if (isMonitoring) {
-    console.log('🔄 MS Teams DOM observer already active');
     return;
   }
 
   // Check if we should use the old live transcribe mode
   if (shouldUseOldMode()) {
-    console.log('🔄 Using OLD live transcribe mode (MS Teams DOM observer disabled)');
     return;
   }
 
-  console.log('👁️ Starting MS Teams DOM observer...');
   isMonitoring = true;
 
   // Create a MutationObserver to watch for new caption elements
@@ -377,7 +363,6 @@ export function startDOMObserver(appendToOverlay, updateLivePreview) {
              const authorElements = node.querySelectorAll && node.querySelectorAll(MS_TEAMS_SELECTORS.AUTHOR_NAME);
              
              if ((captionElements && captionElements.length > 0) || (authorElements && authorElements.length > 0)) {
-               console.log('🆕 New caption/author elements detected via DOM observer');
                // Process the new captions using the same logic as checkTranscript
                setTimeout(() => {
                  checkMSTeamsCaptions(appendToOverlay, updateLivePreview);
@@ -398,17 +383,14 @@ export function startDOMObserver(appendToOverlay, updateLivePreview) {
   // Store the observer for cleanup
   window.msTeamsObserver = observer;
 
-  console.log('✅ MS Teams DOM observer started');
 }
 
 // Stop DOM observer
 export function stopDOMObserver() {
   if (window.msTeamsObserver) {
-    console.log('🛑 Stopping MS Teams DOM observer...');
     window.msTeamsObserver.disconnect();
     window.msTeamsObserver = null;
     isMonitoring = false;
-    console.log('✅ MS Teams DOM observer stopped');
   }
 }
 
@@ -429,7 +411,6 @@ export function clearMSTeamsHistory() {
   lastFinalizedIndex = null;
   currentLiveIndex = null;
   currentLiveText = "";
-  console.log('🧹 MS Teams caption history cleared');
 }
 
 // Remove old processed captions to prevent memory issues
@@ -440,7 +421,6 @@ function cleanupOldProcessedCaptions() {
     const recentEntries = entries.slice(-50);
     lastProcessedCaptions.clear();
     recentEntries.forEach(entry => lastProcessedCaptions.add(entry));
-    console.log(`🧹 Cleaned up old processed captions, kept ${recentEntries.length} recent ones`);
   }
 }
 
@@ -460,22 +440,19 @@ export function clearTranscriptDuplicates() {
     const transcriptArea = document.getElementById('transcript-area');
     if (transcriptArea) {
       transcriptArea.innerHTML = '';
-      console.log('🧹 Cleared transcript area to remove duplicates');
     }
     
     // Also clear the middle panel if it exists
     const middlePanel = document.getElementById('blank-panel');
     if (middlePanel) {
       middlePanel.innerHTML = '';
-      console.log('🧹 Cleared middle panel to remove duplicates');
     }
     
     // Clear the processed captions set to prevent future duplicates
     clearMSTeamsHistory();
     
-    console.log('✅ All duplicates cleared from UI and memory');
   } catch (error) {
-    console.error('❌ Error clearing transcript duplicates:', error);
+    console.error('Error clearing transcript duplicates:', error);
   }
 }
 
@@ -500,11 +477,10 @@ export function extractCurrentMSCaptions() {
       }
     });
 
-    console.log(`📋 Found ${captions.length} current MS Teams captions:`, captions);
     return captions;
 
   } catch (error) {
-    console.error('❌ Error extracting current MS Teams captions:', error);
+    console.error('Error extracting current MS Teams captions:', error);
     return [];
   }
 }
@@ -513,12 +489,9 @@ export function extractCurrentMSCaptions() {
 export function testMSCaptionProcessing(appendToOverlay, updateLivePreview) {
   // Check if we should use the old live transcribe mode
   if (shouldUseOldMode()) {
-    console.log('🧪 Using OLD live transcribe mode - MS Teams test disabled');
-    console.log('📝 To test MS Teams mode, set USE_OLD_LIVE_TRANSCRIBE_MODE = false');
     return;
   }
 
-  console.log('🧪 Testing MS Teams caption processing...');
   
   const testCaption = "This is a test caption from Microsoft Teams";
   const testAuthor = "Test Speaker";
@@ -541,8 +514,6 @@ export function testMSCaptionProcessing(appendToOverlay, updateLivePreview) {
   // 4. Update live preview (same as checkTranscript) - using new format
   updateLivePreview(formattedCaption);
   
-  console.log('✅ Test caption processed (matching checkTranscript behavior)');
-  console.log('📝 Format: ' + formattedCaption);
 }
 
 // Auto-detect if we're in a Microsoft Teams meeting
@@ -560,15 +531,12 @@ export function detectMSTeamsMeeting() {
     );
 
     if (hasTeamsElements) {
-      console.log('🎯 Microsoft Teams meeting detected');
       return true;
     } else {
-      console.log('❌ Microsoft Teams meeting not detected');
       return false;
     }
 
   } catch (error) {
-    console.error('❌ Error detecting MS Teams meeting:', error);
     return false;
   }
 }
@@ -577,13 +545,10 @@ export function detectMSTeamsMeeting() {
 export function autoInitializeMSTeams(appendToOverlay, updateLivePreview) {
   // Check if we should use the old live transcribe mode
   if (shouldUseOldMode()) {
-    console.log('🔄 Using OLD live transcribe mode - MS Teams auto-initialization disabled');
-    console.log('📝 To enable MS Teams mode, set USE_OLD_LIVE_TRANSCRIBE_MODE = false');
     return false;
   }
 
   if (detectMSTeamsMeeting()) {
-    console.log('🚀 Auto-initializing MS Teams monitoring...');
     startMSTeamsMonitoring(appendToOverlay, updateLivePreview);
     startDOMObserver(appendToOverlay, updateLivePreview);
     return true;

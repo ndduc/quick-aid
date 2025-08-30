@@ -9,7 +9,8 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 1000;
     this.reconnectDelay = 1000; // 1 second
-    this.backendUrl = 'wss://cdda8fd2e749.ngrok-free.app/ws/transcript?access_token=';
+    // this.backendUrl = 'wss://api.qikaid.com/comprehend/ws/transcript?access_token=';
+    this.backendUrl = 'wss://5c00f7077846.ngrok-free.app/comprehend/ws/transcript?access_token=';
     this.messageQueue = [];
     this.onClassificationReceived = null;
     
@@ -48,7 +49,6 @@ class WebSocketService {
       return; // Already running
     }
 
-    console.log('🎯 Starting Teams meeting detection...');
     
     // Check every 2 seconds for Teams meeting
     this.meetingDetectionInterval = setInterval(() => {
@@ -70,11 +70,9 @@ class WebSocketService {
 
     if (isInMeeting && !this.isInMeeting) {
       // Meeting started
-      console.log('🎯 Teams meeting detected - starting session');
       this.startMeetingSession();
     } else if (!isInMeeting && this.isInMeeting) {
       // Meeting ended
-      console.log('⏹️ Teams meeting ended - closing session');
       this.endMeetingSession();
     }
   }
@@ -83,9 +81,7 @@ class WebSocketService {
   startMeetingSession() {
     this.isInMeeting = true;
     this.currentSessionId = `meeting_${Date.now()}`;
-    
-    console.log(`🚀 Meeting session started: ${this.currentSessionId}`);
-    
+        
     // Ensure WebSocket is connected
     if (!this.isConnected) {
       this.connect();
@@ -106,9 +102,7 @@ class WebSocketService {
   // End meeting session
   endMeetingSession() {
     if (!this.isInMeeting) return;
-    
-    console.log(`🛑 Meeting session ended: ${this.currentSessionId}`);
-    
+        
     // Send custom meeting ended message
     this.sendCustomMessage('MEETING HAS ENDED');
     
@@ -136,30 +130,25 @@ class WebSocketService {
 
   // Clear all chat panels
   clearAllChatPanels() {
-    console.log('🧹 Clearing all chat panels...');
     
     // Clear transcript area (left panel)
     const transcriptArea = document.getElementById('transcript-area');
     if (transcriptArea) {
       transcriptArea.innerHTML = '';
-      console.log('✅ Transcript area cleared');
     }
     
     // Clear middle panel (blank-panel)
     const middlePanel = document.getElementById('blank-panel');
     if (middlePanel) {
       middlePanel.innerHTML = '';
-      console.log('✅ Middle panel cleared');
     }
     
     // Clear GPT response area (right panel)
     const gptResponseArea = document.getElementById('gpt-response-area');
     if (gptResponseArea) {
       gptResponseArea.innerHTML = '';
-      console.log('✅ GPT response area cleared');
     }
     
-    console.log('🧹 All chat panels cleared successfully');
   }
 
   // Send session messages
@@ -172,10 +161,8 @@ class WebSocketService {
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
-      console.log(`📤 Sent session message: ${type}`);
     } else {
       this.messageQueue.push(message);
-      console.log(`📋 Session message queued: ${type}`);
     }
   }
 
@@ -191,21 +178,19 @@ class WebSocketService {
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
-      console.log(`📤 Sent custom message: ${text}`);
     } else {
       this.messageQueue.push(message);
-      console.log(`📋 Custom message queued: ${text}`);
     }
   }
 
   // Initialize WebSocket connection
   connect() {
     try {
-      console.log(`🔌 Connecting to WebSocket backend: ${this.backendUrl}`);
+      console.log(`Connecting to WebSocket backend: ${this.backendUrl}`);
       this.socket = new WebSocket(this.backendUrl);
 
       this.socket.onopen = () => {
-        console.log('✅ WebSocket connected to backend');
+        console.log('WebSocket connected to backend');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.processMessageQueue();
@@ -216,7 +201,7 @@ class WebSocketService {
       };
 
       this.socket.onclose = (event) => {
-        console.log('❌ WebSocket connection closed:', event.code, event.reason);
+        console.log('WebSocket connection closed:', event.code, event.reason);
         this.isConnected = false;
         this.handleReconnection();
       };
@@ -236,20 +221,20 @@ class WebSocketService {
   handleIncomingMessage(data) {
     try {
       const message = JSON.parse(data);
-      console.log('📨 Received from backend:', message);
+      console.log('Received from backend:', message);
 
       if (message.type === 'CLASSIFICATION_RESULT') {
         this.handleClassificationResult(message);
       } else if (message.type === 'QUESTION') {
         this.handleQuestionMessage(message);
       } else if (message.type === 'ERROR') {
-        console.error('❌ Backend error:', message.error);
+        console.error('Backend error:', message.error);
       } else {
-        console.log('📝 Unknown message type:', message.type);
+        console.log('Unknown message type:', message.type);
       }
 
     } catch (error) {
-      console.error('❌ Failed to parse WebSocket message:', error);
+      console.error('Failed to parse WebSocket message:', error);
     }
   }
 
@@ -267,7 +252,7 @@ class WebSocketService {
       });
     }
 
-    console.log(`🏷️ Classification for "${aiAnswer?.substring(0, 50)}...":`, {
+    console.log(`Classification for "${aiAnswer?.substring(0, 50)}...":`, {
       classification,
       confidence: confidence ? `${(confidence * 100).toFixed(1)}%` : 'N/A',
       suggestions: suggestions?.length || 0
@@ -290,13 +275,13 @@ class WebSocketService {
       // Auto-scroll to bottom to show latest question
       middlePanel.scrollTop = middlePanel.scrollHeight;
       
-      console.log(`❓ Question appended to middle panel: ${aiAnswer?.substring(0, 50)}...`);
+      console.log(`Question appended to middle panel: ${aiAnswer?.substring(0, 50)}...`);
     } else {
-      console.warn('⚠️ Middle panel (blank-panel) not found');
+      console.warn('Middle panel (blank-panel) not found');
     }
 
     // Log the question message
-    console.log(`❓ Question received:`, {
+    console.log(`Question received:`, {
       transcriptId,
       text: text?.substring(0, 50) + '...'
     });
@@ -315,10 +300,10 @@ class WebSocketService {
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
-      console.log(`📤 Sent transcript: ${text.substring(0, 50)}...`);
+      console.log(`Sent transcript: ${text.substring(0, 50)}...`);
     } else {
       this.messageQueue.push(message);
-      console.log(`📋 Queued transcript (not connected): ${text.substring(0, 50)}...`);
+      console.log(`Queued transcript (not connected): ${text.substring(0, 50)}...`);
     }
   }
 
@@ -326,12 +311,12 @@ class WebSocketService {
   processMessageQueue() {
     if (this.messageQueue.length === 0) return;
 
-    console.log(`📤 Processing ${this.messageQueue.length} queued messages...`);
+    console.log(`Processing ${this.messageQueue.length} queued messages...`);
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
       if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify(message));
-        console.log(`📤 Sent queued message: ${message.text?.substring(0, 50) || 'session message'}...`);
+        console.log(`Sent queued message: ${message.text?.substring(0, 50) || 'session message'}...`);
       }
     }
   }
@@ -339,13 +324,13 @@ class WebSocketService {
   // Reconnection logic
   handleReconnection() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('❌ Max reconnection attempts reached');
+      console.error('Max reconnection attempts reached');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
     setTimeout(() => this.connect(), delay);
   }
@@ -355,7 +340,7 @@ class WebSocketService {
       this.socket.close(1000, 'User requested disconnect');
       this.socket = null;
       this.isConnected = false;
-      console.log('🔌 WebSocket disconnected');
+      console.log('WebSocket disconnected');
     }
   }
 
@@ -387,7 +372,7 @@ class WebSocketService {
   }
 
   async initialize() {
-    console.log('🚀 Initializing WebSocketService...');
+    console.log('Initializing WebSocketService...');
     // this.connect();
     this.init();
   }
