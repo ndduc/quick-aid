@@ -1,12 +1,12 @@
 const KEYS = [
     "access_token",
-    "id_token",
-    "refresh_token",
-    "expires_in",
+    // "id_token",
+    // "refresh_token",
+    // "expires_in",
     "token_type",
     "token_timestamp",
     "user_identifier",
-    "theme",
+    // "theme",
     "cognitoId"
   ];
   
@@ -15,9 +15,10 @@ const KEYS = [
     for (const k of KEYS) {
       payload[k] = localStorage.getItem(k) || null;
     }
+    console.log("SENDING TOKEN");
     // only send if we actually have a token
     if (payload.access_token) {
-      chrome.runtime.sendMessage({ type: "QA_TOKENS", payload });
+      chrome.runtime.sendMessage({ type: "QIKAID_PLUGIN_QA_TOKENS", payload });
     }
   }
   

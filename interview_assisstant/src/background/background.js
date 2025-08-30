@@ -2,9 +2,9 @@
 let TOKENS = null;
 
 chrome.runtime.onMessage.addListener((msg, sender, respond) => {
-  if (msg?.type === "QA_TOKENS") {
+  if (msg?.type === "QIKAID_PLUGIN_QA_TOKENS") {
     TOKENS = msg.payload;
-    chrome.storage.local.set({ qa_tokens: TOKENS });
+    chrome.storage.local.set({ QIKAID_PLUGIN_QA_TOKENS: TOKENS });
     console.log("[QikAid] tokens cached:", {
       user: TOKENS.user_identifier,
       expIn: TOKENS.expires_in
@@ -16,8 +16,8 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
 // Helper to load cached tokens
 async function getTokens() {
   if (TOKENS) return TOKENS;
-  const { qa_tokens } = await chrome.storage.local.get("qa_tokens");
-  TOKENS = qa_tokens || null;
+  const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+  TOKENS = QIKAID_PLUGIN_QA_TOKENS || null;
   return TOKENS;
 }
 

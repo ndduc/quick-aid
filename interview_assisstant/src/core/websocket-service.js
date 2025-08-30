@@ -1,6 +1,8 @@
 // WebSocket Service for Real-time Transcript Classification
 // Connects to Java Spring Boot WebSocket endpoint via ngrok tunnel
-import { getAccessToken } from './token-store.js';
+import { getAccessToken, getCognitoId,
+   getUserIdentifier, waitForAccessToken,
+    waitForCognitoId, waitForUserIdentifier } from './token-store.js';
 
 class WebSocketService {
   constructor() {
@@ -25,7 +27,12 @@ class WebSocketService {
     console.log('INIT GET ACCESS TOKEN');
     // get token (wait if not available yet)
     this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
-    this.backendUrl = this.backendUrl + this.accessToken;
+    this.cognitoId = await getCognitoId() || await waitForCognitoId(10000);
+    this.userIdentifier = await getUserIdentifier() || await waitForUserIdentifier(10000);
+    this.backendUrl = this.backendUrl 
+      + this.accessToken 
+      + "&cognitoId=" + this.cognitoId 
+      + "&userIdentifier=" + this.userIdentifier;
     this.connect();
 
     // Start meeting detection
