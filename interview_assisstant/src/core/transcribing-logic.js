@@ -1,8 +1,11 @@
 
 
+import { webSocketService } from './websocket-service.js';
+
 let lastFinalizedIndex = null;
 let currentLiveIndex = null;
 let currentLiveText = "";
+let transcriptCounter = 0;
 
 
 
@@ -30,6 +33,13 @@ export function checkTranscript(transcriptLog, appendToOverlay, updateLivePrevie
           transcriptLog.add(prevIndex);
           lastFinalizedIndex = prevIndex;
           appendToOverlay(text);
+          
+          // Send transcript to WebSocket backend for real-time classification
+          const transcriptId = `transcript_${++transcriptCounter}_${Date.now()}`;
+          const timestamp = new Date().toISOString();
+          
+          console.log(transcriptId + " " + text + " " + timestamp);
+          webSocketService.sendTranscriptForClassification(transcriptId, text, timestamp);
         }
       }
     }
