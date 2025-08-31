@@ -1135,26 +1135,44 @@ function createExtensionPopup() {
   // Add the popup to the header
   header.appendChild(popupContainer);
   
-  // Create 3 vertical dots button
-  const threeDots = document.createElement("div");
-  threeDots.innerHTML = "⋮";
-  threeDots.style.cssText = `
+  // Create X close button
+  const closeButton = document.createElement("div");
+  closeButton.innerHTML = "×";
+  closeButton.style.cssText = `
     position: absolute;
     left: 8px;
     top: 50%;
     transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.8);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     cursor: pointer;
     user-select: none;
+    transition: all 0.2s ease;
   `;
+  
+  // Add hover effects to close button
+  closeButton.addEventListener("mouseenter", () => {
+    closeButton.style.color = "rgba(255, 255, 255, 1)";
+    closeButton.style.transform = "translateY(-50%) scale(1.1)";
+  });
+  
+  closeButton.addEventListener("mouseleave", () => {
+    closeButton.style.color = "rgba(255, 255, 255, 0.8)";
+    closeButton.style.transform = "translateY(-50%) scale(1)";
+  });
+  
+  // Add click handler template for close button
+  closeButton.addEventListener("click", () => {
+    // TODO: Add close functionality here
+    console.log("Close button clicked - add functionality here");
+  });
   
   // Create simple vertical line on the left side
   const verticalLine = document.createElement("div");
   verticalLine.style.cssText = `
     position: absolute;
-    left: 20px;
+    left: 24px;
     top: 50%;
     transform: translateY(-50%);
     width: 2px;
@@ -1163,8 +1181,8 @@ function createExtensionPopup() {
     border-radius: 1px;
   `;
   
-  // Add three dots and vertical line to the popup container
-  popupContainer.appendChild(threeDots);
+  // Add close button and vertical line to the popup container
+  popupContainer.appendChild(closeButton);
   popupContainer.appendChild(verticalLine);
   
   // Hide the original title and buttons when minimized
