@@ -1162,10 +1162,15 @@ function createExtensionPopup() {
     closeButton.style.transform = "translateY(-50%) scale(1)";
   });
   
-  // Add click handler template for close button
+  // Add click handler for close button - hide entire UI
   closeButton.addEventListener("click", () => {
-    // TODO: Add close functionality here
-    console.log("Close button clicked - add functionality here");
+    // Hide the entire overlay but keep background logic running
+    overlay.style.display = "none";
+    
+    // Set a flag to indicate UI is hidden
+    window.isUIHidden = true;
+    
+    console.log("UI hidden - background logic continues running");
   });
   
   // Create simple vertical line on the left side
@@ -1372,3 +1377,38 @@ function enableResizeFunctionality() {
     delete window.originalResizeHandlers;
   }
 }
+
+// Function to show the UI again (called when extension icon is clicked)
+function showUI() {
+  if (window.isUIHidden) {
+    // Show the overlay again
+    overlay.style.display = "block";
+    
+    // Reset the hidden flag
+    window.isUIHidden = false;
+    
+    console.log("UI restored from extension icon click");
+  }
+}
+
+// Make the function globally available for background script communication
+window.showUI = showUI;
+
+// Listen for messages from background script to show/hide UI
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SHOW_UI") {
+    if (message.action === "toggle") {
+      if (window.isUIHidden) {
+        // Show the UI
+        showUI();
+        sendResponse({ success: true, action: "shown" });
+      } else {
+        // Hide the UI (if not already hidden)
+        overlay.style.display = "none";
+        window.isUIHidden = true;
+        sendResponse({ success: true, action: "hidden" });
+      }
+    }
+    return true; // Keep the message channel open for async response
+  }
+});

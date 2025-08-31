@@ -35,8 +35,24 @@ async function callApi() {
   console.log("[QikAid] API status:", res.status);
 }
 
-// Click the toolbar button to test the API call
-chrome.action.onClicked.addListener(callApi);
+// Click the toolbar button to show/hide the UI
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    // Send message to content script to show UI
+    const response = await chrome.tabs.sendMessage(tab.id, { 
+      type: "SHOW_UI", 
+      action: "toggle" 
+    });
+    
+    if (response && response.success) {
+      console.log("[QikAid] UI toggle message sent successfully");
+    }
+  } catch (error) {
+    console.log("[QikAid] Content script not ready or error:", error);
+    // If content script isn't ready, just call the API as fallback
+    callApi();
+  }
+});
 
 // (Optional) WebSocket later:
 // const ws = new WebSocket(`ws://localhost:8081/ws?token=${encodeURIComponent(TOKENS.access_token)}`);
