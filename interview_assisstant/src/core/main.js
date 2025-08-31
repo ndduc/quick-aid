@@ -1143,7 +1143,7 @@ function createExtensionPopup() {
     left: 8px;
     top: 50%;
     transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(242, 83, 88, 255);
     font-size: 18px;
     font-weight: bold;
     cursor: pointer;
@@ -1153,12 +1153,12 @@ function createExtensionPopup() {
   
   // Add hover effects to close button
   closeButton.addEventListener("mouseenter", () => {
-    closeButton.style.color = "rgba(255, 255, 255, 1)";
+    // closeButton.style.color = "rgba(255, 255, 255, 1)";
     closeButton.style.transform = "translateY(-50%) scale(1.1)";
   });
   
   closeButton.addEventListener("mouseleave", () => {
-    closeButton.style.color = "rgba(255, 255, 255, 0.8)";
+    // closeButton.style.color = "rgba(255, 255, 255, 0.8)";
     closeButton.style.transform = "translateY(-50%) scale(1)";
   });
   
@@ -1181,8 +1181,8 @@ function createExtensionPopup() {
     top: 50%;
     transform: translateY(-50%);
     width: 2px;
-    height: 30px;
-    background: rgba(255, 255, 255, 0.8);
+    height: 60px;
+    background:rgb(255, 227, 149);
     border-radius: 1px;
   `;
   
