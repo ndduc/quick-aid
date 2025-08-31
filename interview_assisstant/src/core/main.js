@@ -166,7 +166,7 @@ minimizeBtn.addEventListener("click", () => {
   else {
     // Minimize to look like a warm yellow extension popup
     overlay.style.height = "50px";
-    overlay.style.width = "200px";
+    overlay.style.width = "80px";
     overlay.style.background = "#F9D77E";
     overlay.style.border = "1px solid #E6C25A";
     overlay.style.borderRadius = "8px";
@@ -223,7 +223,7 @@ minimizeBtn.addEventListener("click", () => {
     // Update header styling for minimized state
     header.style.background = "#E6C25A";
     header.style.borderRadius = "8px 8px 0 0";
-    header.style.padding = "8px 12px";
+    header.style.padding = "8px 36px";
     
     // Create the extension popup appearance
     createExtensionPopup();
@@ -1134,6 +1134,38 @@ function createExtensionPopup() {
   
   // Add the popup to the header
   header.appendChild(popupContainer);
+  
+  // Create 3 vertical dots button
+  const threeDots = document.createElement("div");
+  threeDots.innerHTML = "⋮";
+  threeDots.style.cssText = `
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+  `;
+  
+  // Create simple vertical line on the left side
+  const verticalLine = document.createElement("div");
+  verticalLine.style.cssText = `
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 1px;
+  `;
+  
+  // Add three dots and vertical line to the popup container
+  popupContainer.appendChild(threeDots);
+  popupContainer.appendChild(verticalLine);
   
   // Hide the original title and buttons when minimized
   const titleContainer = header.querySelector("div");
