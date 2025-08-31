@@ -393,7 +393,7 @@ document.addEventListener("contextmenu", (e) => {
   const onOptionClick = async (prefix, label) => {
     const prompt = prefix + selection;
     appendToOverlay(`➡️ You: ${prompt}`, false); // User input goes to right panel
-    appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
+    appendToOverlay("AI Response: ...thinking", true); // GPT thinking goes to left panel
     const reply = await fetchGPTResponse(
       prompt, 
       generateInterviewPayload(
@@ -402,7 +402,7 @@ document.addEventListener("contextmenu", (e) => {
         aiModel
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "🧠 GPT: ...thinking") el.remove();
+      if (el.textContent === "AI Response: ...thinking") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
     menu.remove();
@@ -995,7 +995,7 @@ function appendToOverlay(text, isGPT = false) {
     targetArea.scrollHeight - targetArea.scrollTop <= targetArea.clientHeight + 20;
 
   const p = document.createElement("div");
-  p.textContent = isGPT ? `🧠 GPT: ${text}` : text;
+  p.textContent = isGPT ? `AI Response: ${text}` : text;
   p.style.marginBottom = "8px";
   p.style.cursor = "text";
   p.style.userSelect = "text";
