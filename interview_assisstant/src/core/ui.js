@@ -186,6 +186,20 @@ export function createInputSection(submitCustomPrompt) {
     cursor: pointer;
   `;
   
+  const reconnectBtn = document.createElement("button");
+  reconnectBtn.textContent = "🔌";
+  reconnectBtn.title = "Reconnect WebSocket";
+  reconnectBtn.style.cssText = `
+    padding: 6px 8px;
+    font-size: 16px;
+    background: #ffc107;
+    color: #212529;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 6px;
+  `;
+  
   const screenshotBtn = document.createElement("button");
   screenshotBtn.textContent = "📷";
   screenshotBtn.title = "Take Screenshot";
@@ -258,6 +272,7 @@ export function createInputSection(submitCustomPrompt) {
 
   inputSection.appendChild(input);
   inputSection.appendChild(askBtn);
+  inputSection.appendChild(reconnectBtn);
   inputSection.appendChild(screenshotBtn);
   inputSection.appendChild(msTeamsTestBtn);
   inputSection.appendChild(statusBtn);
@@ -269,7 +284,7 @@ export function createInputSection(submitCustomPrompt) {
   });
 
 
-  return {inputSection, input, askBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn}
+  return {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn}
 } 
 
 

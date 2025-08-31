@@ -172,11 +172,64 @@ leftResizer.style.cursor = "ne-resize";
 
 
 // === Bottom Input Section ===
-const {inputSection, input, askBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
+const {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
 overlay.appendChild(inputSection);
 
 
 askBtn.onclick = submitCustomPrompt;
+
+reconnectBtn.onclick = async () => {
+  try {
+    appendToOverlay("🔄 Attempting to reconnect WebSocket...", true);
+    
+    // Check if WebSocket service is available
+    if (webSocketService) {
+      // Force disconnect if currently connected
+      if (webSocketService.isConnected) {
+        webSocketService.disconnect();
+        appendToOverlay("🔌 Disconnected existing connection", true);
+      }
+      
+      // Wait a moment then attempt to reconnect
+      setTimeout(async () => {
+        try {
+          // Reset reconnection attempts for clean start
+          webSocketService.reconnectAttempts = 0;
+          
+          // Attempt to connect
+          webSocketService.connect();
+          appendToOverlay("✅ WebSocket reconnection initiated!", true);
+          
+          // Update button appearance to show success
+          reconnectBtn.style.background = "#28a745";
+          reconnectBtn.textContent = "✅";
+          setTimeout(() => {
+            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.textContent = "🔌";
+          }, 2000);
+          
+        } catch (error) {
+          console.error("WebSocket reconnection failed:", error);
+          appendToOverlay("❌ WebSocket reconnection failed: " + error.message, true);
+          
+          // Update button appearance to show failure
+          reconnectBtn.style.background = "#dc3545";
+          reconnectBtn.textContent = "❌";
+          setTimeout(() => {
+            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.textContent = "🔌";
+          }, 2000);
+        }
+      }, 500);
+      
+    } else {
+      appendToOverlay("❌ WebSocket service not available", true);
+    }
+  } catch (error) {
+    console.error("Error during reconnection attempt:", error);
+    appendToOverlay("❌ Reconnection error: " + error.message, true);
+  }
+};
 msTeamsTestBtn.onclick = () => {
   testMSCaptionProcessing(appendToOverlay, updateLivePreview);
   
