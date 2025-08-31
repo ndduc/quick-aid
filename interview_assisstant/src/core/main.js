@@ -14,7 +14,6 @@ import {createHeader, createContentArea, createOverlay, createResizer, createLef
 
 let apiKey = getApiKey();
 
-let lastLine = "";
 const transcriptLog = new Set();
 
 let aiModel = getOpenAiModel();
@@ -22,8 +21,6 @@ let jobRole = getJobRole();
 let jobSpecialy = getJobSpecialy();
 let extraInterviewPrompt = getExtraInterviewPrompt();
 
-// Verify initial configuration
-verifyConfiguration();
 
 // Initialize WebSocket service and set up classification callback
 setupWebSocketClassification();
@@ -341,21 +338,13 @@ modeStatusBtn.onclick = () => {
     appendToOverlay("❌ Failed to get mode status", true);
   });
 };
-// input.addEventListener("keydown", (e) => {
-//   if (e.key === "Enter") submitCustomPrompt();
-// });
 
-// Removed duplicate line
+
 
 // === SCREENSHOT Button Logic ===
 inputSection.appendChild(screenshotBtn);
 
-// === Minimize toggle logic ===
-// minimizeBtn.onclick = () => {
-//   isMinimized = !isMinimized;
-//   contentArea.style.display = isMinimized ? "none" : "block";
-//   minimizeBtn.textContent = isMinimized ? "+" : "–";
-// };
+
 
 // === Drag functionality ===
 header.addEventListener("mousedown", (e) => {
@@ -501,16 +490,6 @@ function refreshConfigValues() {
   console.log("Config refreshed:", { apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt });
 }
 
-// Function to verify configuration is properly loaded
-function verifyConfiguration() {
-  // console.log("=== Configuration Verification ===");
-  // console.log("API Key:", apiKey ? "Set (" + apiKey.substring(0, 10) + "...)" : "Not set");
-  // console.log("AI Model:", aiModel);
-  // console.log("Job Role:", jobRole);
-  // console.log("Job Specialty:", jobSpecialy);
-  // console.log("Extra Prompt:", extraInterviewPrompt);
-  // console.log("================================");
-}
 
 // Function to setup WebSocket classification handling
 function setupWebSocketClassification() {
@@ -756,14 +735,6 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
   }
 }
 
-
-
-
-
-
-
-
-
 saveConfigBtn.onclick = () => {
   try {
     // Save API Key
@@ -812,13 +783,11 @@ saveConfigBtn.onclick = () => {
     // Close config modal after saving
     isConfigOpen = false;
     configModal.style.display = "none";
+
     
-    // Verify the new configuration
-    verifyConfiguration();
-    
-    appendToOverlay("✅ Config saved and applied! Model: " + aiModel);
+    appendToOverlay("Config saved and applied! Model: " + aiModel);
   } catch (e) {
-    appendToOverlay("❌ Error saving config: " + e.message);
+    appendToOverlay("Error saving config: " + e.message);
     console.error(e);
   }
 };
@@ -860,16 +829,7 @@ let livePreviewElement = null;
 let livePreviewTimeout = null;
 let lastLivePreviewText = '';
 
-// function updateLivePreview(text) {
-//   if (!livePreviewElement) {
-//     livePreviewElement = document.createElement("div");
-//     livePreviewElement.style.cssText = "margin-top: 10px; opacity: 0.6; font-style: italic;";
-//     contentArea.appendChild(livePreviewElement);
-//   }
 
-//   livePreviewElement.textContent = text;
-//   contentArea.scrollTop = contentArea.scrollHeight;
-// }
 function updateLivePreview(text) {
   // Check if this text is already present in the transcript area
   if (isDuplicateText(text)) {
