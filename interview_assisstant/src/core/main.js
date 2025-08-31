@@ -128,33 +128,111 @@ minimizeBtn.addEventListener("click", () => {
     // Restore the overlay
     overlay.style.height = "600px";
     overlay.style.width = "1200px";
+    overlay.style.background = "white";
+    overlay.style.border = "2px solid #ccc";
+    overlay.style.borderRadius = "8px";
+    overlay.style.boxShadow = "0 0 12px rgba(0,0,0,0.3)";
     contentContainer.style.display = "flex";
     inputSection.style.display = "flex";
     minimizeBtn.textContent = "–";
     minimizeBtn.title = "Minimize";
     isMinimized = false;
     
-    // Re-enable resize functionality
-    resizer.style.pointerEvents = "auto";
-    leftResizer.style.pointerEvents = "auto";
-    resizer.style.cursor = "nw-resize";
-    leftResizer.style.cursor = "ne-resize";
+    // Restore overflow and scrollbars when maximized
+    overlay.style.overflow = "auto";
+    
+    // Re-enable the global resize event listeners
+    enableResizeFunctionality();
+    
+    // Reset header styling for restored state
+    header.style.background = "#f5f5f5";
+    header.style.borderRadius = "0";
+    header.style.padding = "6px 10px";
+    
+    // Reset positioning for restored state
+    overlay.style.right = "auto";
+    overlay.style.left = "auto";
+    overlay.style.top = "10px";
+    
+    // Remove extension popup styling
+    removeExtensionPopup();
+    
+    // Disable vertical-only dragging and restore normal dragging
+    disableVerticalOnlyDragging();
+    
+    // Show the minimize button again when restored
+    minimizeBtn.style.display = "block";
   } 
   else {
-    // Minimize the overlay
-    overlay.style.height = "40px";
-    overlay.style.width = "300px";
+    // Minimize to look like a warm yellow extension popup
+    overlay.style.height = "50px";
+    overlay.style.width = "200px";
+    overlay.style.background = "#F9D77E";
+    overlay.style.border = "1px solid #E6C25A";
+    overlay.style.borderRadius = "8px";
+    overlay.style.boxShadow = "0 4px 12px rgba(249, 215, 126, 0.3)";
+    overlay.style.resize = "none";
+    
+    // Position to stick to the right side of the browser
+    overlay.style.right = "20px";
+    overlay.style.left = "auto";
+    overlay.style.top = "100px"; // Default vertical position
+    
     contentContainer.style.display = "none";
     inputSection.style.display = "none";
     minimizeBtn.textContent = "□";
     minimizeBtn.title = "Restore";
     isMinimized = true;
     
-    // Disable resize functionality when minimized
+    // Completely disable resize functionality when minimized
     resizer.style.pointerEvents = "none";
     leftResizer.style.pointerEvents = "none";
     resizer.style.cursor = "default";
     leftResizer.style.cursor = "default";
+    resizer.style.display = "none";
+    leftResizer.style.display = "none";
+    
+    // Aggressively hide resize handles with CSS
+    resizer.style.visibility = "hidden";
+    leftResizer.style.visibility = "hidden";
+    resizer.style.opacity = "0";
+    leftResizer.style.opacity = "0";
+    resizer.style.width = "0";
+    leftResizer.style.width = "0";
+    resizer.style.height = "0";
+    leftResizer.style.height = "0";
+    
+    // Remove borders that might still be visible
+    resizer.style.border = "none";
+    leftResizer.style.border = "none";
+    
+    // Completely remove resize handles from DOM when minimized
+    if (resizer.parentNode) {
+      resizer.parentNode.removeChild(resizer);
+    }
+    if (leftResizer.parentNode) {
+      leftResizer.parentNode.removeChild(leftResizer);
+    }
+    
+    // Remove scrollbars and overflow when minimized
+    overlay.style.overflow = "hidden";
+    
+    // Disable the global resize event listeners
+    disableResizeFunctionality();
+    
+    // Update header styling for minimized state
+    header.style.background = "#E6C25A";
+    header.style.borderRadius = "8px 8px 0 0";
+    header.style.padding = "8px 12px";
+    
+    // Create the extension popup appearance
+    createExtensionPopup();
+    
+    // Enable vertical-only dragging for minimized state
+    enableVerticalOnlyDragging();
+    
+    // Hide the minimize button when minimized
+    minimizeBtn.style.display = "none";
   }
 });
 
@@ -929,5 +1007,318 @@ function appendToOverlay(text, isGPT = false) {
   // Only scroll to bottom if user hasn't scrolled up
   if (isAtBottom) {
     targetArea.scrollTop = targetArea.scrollHeight;
+  }
+}
+
+// Function to create the extension popup appearance (like the blue popup in the screenshot)
+function createExtensionPopup() {
+  // Remove existing popup styling if any
+  removeExtensionPopup();
+  
+  // Create popup content container
+  const popupContainer = document.createElement("div");
+  popupContainer.id = "extension-popup";
+  popupContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+  `;
+  
+  // Create left side with just the QuickAid icon
+  const leftSide = document.createElement("div");
+  leftSide.style.cssText = `
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  `;
+  
+  // Create QuickAid icon using the actual image
+  const quickAidIcon = document.createElement("img");
+  
+  // Get the correct extension URL for the image
+  let iconSrc = "";
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+      iconSrc = chrome.runtime.getURL("assets/QuickAid Icon.png");
+    } else {
+      // Fallback for development or when chrome API is not available
+      iconSrc = "assets/QuickAid Icon.png";
+    }
+  } catch (error) {
+    console.log("Chrome API not available, using fallback path:", error);
+    iconSrc = "assets/QuickAid Icon.png";
+  }
+  
+  quickAidIcon.src = iconSrc;
+  quickAidIcon.title = "QuickAid";
+  quickAidIcon.style.cssText = `
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: brightness(0) invert(1); /* Make the icon white */
+  `;
+  
+  // Debug logging
+  console.log("QuickAid icon source:", iconSrc);
+  console.log("Chrome runtime available:", typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL);
+  
+  // Add error handling for the image
+  quickAidIcon.onerror = () => {
+    console.error("Failed to load QuickAid icon:", iconSrc);
+    // Fallback to text icon if image fails to load
+    quickAidIcon.style.display = "none";
+    const fallbackIcon = document.createElement("div");
+    fallbackIcon.innerHTML = "⚡";
+    fallbackIcon.style.cssText = `
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    `;
+    
+    // Add click handler to the fallback icon to restore the interface
+    fallbackIcon.addEventListener("click", () => {
+      // Trigger the minimize button click to restore
+      minimizeBtn.click();
+    });
+    
+    // Add hover effects to the fallback icon
+    fallbackIcon.addEventListener("mouseenter", () => {
+      fallbackIcon.style.transform = "scale(1.1)";
+    });
+    
+    fallbackIcon.addEventListener("mouseleave", () => {
+      fallbackIcon.style.transform = "scale(1)";
+    });
+    
+    quickAidIcon.parentNode.insertBefore(fallbackIcon, quickAidIcon);
+  };
+  
+  // Add success logging
+  quickAidIcon.onload = () => {
+    console.log("QuickAid icon loaded successfully:", iconSrc);
+  };
+  
+  // Assemble the popup
+  leftSide.appendChild(quickAidIcon);
+  
+  popupContainer.appendChild(leftSide);
+  
+  // Add click handler to the QuickAid icon to restore the interface
+  quickAidIcon.addEventListener("click", () => {
+    // Trigger the minimize button click to restore
+    minimizeBtn.click();
+  });
+  
+  // Make the icon look clickable
+  quickAidIcon.style.cursor = "pointer";
+  quickAidIcon.style.transition = "transform 0.2s ease";
+  
+  // Add hover effects
+  quickAidIcon.addEventListener("mouseenter", () => {
+    quickAidIcon.style.transform = "scale(1.1)";
+  });
+  
+  quickAidIcon.addEventListener("mouseleave", () => {
+    quickAidIcon.style.transform = "scale(1)";
+  });
+  
+  // Add the popup to the header
+  header.appendChild(popupContainer);
+  
+  // Hide the original title and buttons when minimized
+  const titleContainer = header.querySelector("div");
+  if (titleContainer) titleContainer.style.display = "none";
+  
+  const msTeamsStatus = document.getElementById("ms-teams-status");
+  if (msTeamsStatus) msTeamsStatus.style.display = "none";
+  
+  const configBtnInHeader = header.querySelector("button[title*='Configure']");
+  if (configBtnInHeader) configBtnInHeader.style.display = "none";
+}
+
+// Function to remove extension popup styling
+function removeExtensionPopup() {
+  const popupContainer = document.getElementById("extension-popup");
+  if (popupContainer) {
+    popupContainer.remove();
+  }
+  
+  // Restore original header elements
+  const titleContainer = header.querySelector("div");
+  if (titleContainer) titleContainer.style.display = "flex";
+  
+  const msTeamsStatus = document.getElementById("ms-teams-status");
+  if (msTeamsStatus) msTeamsStatus.style.display = "block";
+  
+  const configBtnInHeader = header.querySelector("button[title*='Configure']");
+  if (configBtnInHeader) configBtnInHeader.style.display = "block";
+}
+
+// Function to enable vertical-only dragging for minimized state
+function enableVerticalOnlyDragging() {
+  // Store original drag event listeners
+  if (!window.originalDragHandlers) {
+    window.originalDragHandlers = {
+      mousedown: header.onmousedown,
+      mousemove: document.onmousemove,
+      mouseup: document.onmouseup
+    };
+  }
+  
+  // Completely remove original drag functionality
+  header.onmousedown = null;
+  document.onmousemove = null;
+  document.onmouseup = null;
+  
+  // Add vertical-only drag functionality
+  let isVerticalDragging = false;
+  let startY = 0;
+  let startTop = 0;
+  
+  header.onmousedown = (e) => {
+    isVerticalDragging = true;
+    startY = e.clientY;
+    startTop = parseInt(overlay.style.top) || 100;
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  };
+  
+  document.onmousemove = (e) => {
+    if (!isVerticalDragging) return;
+    
+    const deltaY = e.clientY - startY;
+    const newTop = Math.max(0, Math.min(window.innerHeight - 50, startTop + deltaY));
+    
+    // Force the popup to stay on the right side
+    overlay.style.top = `${newTop}px`;
+    overlay.style.right = "20px";
+    overlay.style.left = "auto";
+  };
+  
+  document.onmouseup = () => {
+    isVerticalDragging = false;
+    document.body.style.userSelect = "";
+    
+    // Ensure it's still positioned correctly after dragging
+    overlay.style.right = "20px";
+    overlay.style.left = "auto";
+  };
+  
+  // Set up a periodic check to ensure the popup stays on the right side
+  if (window.positionCheckInterval) {
+    clearInterval(window.positionCheckInterval);
+  }
+  
+  window.positionCheckInterval = setInterval(() => {
+    if (isMinimized) {
+      overlay.style.right = "20px";
+      overlay.style.left = "auto";
+    }
+  }, 100); // Check every 100ms
+}
+
+// Function to disable vertical-only dragging and restore normal dragging
+function disableVerticalOnlyDragging() {
+  // Restore original drag functionality
+  if (window.originalDragHandlers) {
+    header.onmousedown = window.originalDragHandlers.mousedown;
+    document.onmousemove = window.originalDragHandlers.mousemove;
+    document.onmouseup = window.originalDragHandlers.mouseup;
+    
+    // Clear stored handlers
+    delete window.originalDragHandlers;
+  }
+  
+  // Clear the position check interval
+  if (window.positionCheckInterval) {
+    clearInterval(window.positionCheckInterval);
+    delete window.positionCheckInterval;
+  }
+}
+
+// Function to disable resize functionality
+function disableResizeFunctionality() {
+  // Store original resize event listeners if not already stored
+  if (!window.originalResizeHandlers) {
+    window.originalResizeHandlers = {
+      resizerMousedown: resizer.onmousedown,
+      leftResizerMousedown: leftResizer.onmousedown,
+      documentMousemove: document.onmousemove,
+      documentMouseup: document.onmouseup
+    };
+  }
+  
+  // Remove all resize event listeners
+  resizer.onmousedown = null;
+  leftResizer.onmousedown = null;
+  
+  // Also disable the global resize event listeners
+  if (window.isResizing !== undefined) {
+    window.isResizing = false;
+  }
+  if (window.isLeftResizing !== undefined) {
+    window.isLeftResizing = false;
+  }
+  
+  // Completely remove resize handles from DOM when minimized
+  if (resizer.parentNode) {
+    resizer.parentNode.removeChild(resizer);
+  }
+  if (leftResizer.parentNode) {
+    leftResizer.parentNode.removeChild(leftResizer);
+  }
+}
+
+// Function to enable resize functionality
+function enableResizeFunctionality() {
+  // Recreate resize handles if they were removed
+  if (!resizer.parentNode) {
+    overlay.appendChild(resizer);
+    // Restore original styles
+    resizer.style.cssText = `
+      width: 14px;
+      height: 14px;
+      background: transparent;
+      border-right: 2px solid #aaa;
+      border-bottom: 2px solid #aaa;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      cursor: se-resize;
+    `;
+  }
+  if (!leftResizer.parentNode) {
+    overlay.appendChild(leftResizer);
+    // Restore original styles
+    leftResizer.style.cssText = `
+      width: 14px;
+      height: 14px;
+      background: transparent;
+      border-left: 2px solid #aaa;
+      border-bottom: 2px solid #aaa;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      cursor: sw-resize;
+    `;
+  }
+  
+  // Restore original resize event listeners
+  if (window.originalResizeHandlers) {
+    resizer.onmousedown = window.originalResizeHandlers.resizerMousedown;
+    leftResizer.onmousedown = window.originalResizeHandlers.leftResizerMousedown;
+    
+    // Clear stored handlers
+    delete window.originalResizeHandlers;
   }
 }

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "powershell -Command \"if (Test-Path dist) { Remove-Item dist -Recurse -Force }; New-Item -ItemType Directory -Path dist; esbuild src/background/background.js src/cs/cs_app.js src/core/main.js src/cs/cs_teams.js --bundle --outdir=dist --format=iife; Copy-Item -Path manifest.json -Destination dist/\""
+    "build": "powershell -Command \"if (Test-Path dist) { Remove-Item dist -Recurse -Force }; New-Item -ItemType Directory -Path dist; esbuild src/background/background.js src/cs/cs_app.js src/core/main.js src/cs/cs_teams.js --bundle --outdir=dist --format=iife; Copy-Item -Path manifest.json -Destination dist/; Copy-Item -Path assets -Destination dist/ -Recurse\""
   },
   "keywords": [],
   "author": "",

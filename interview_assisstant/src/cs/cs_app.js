@@ -15,7 +15,6 @@ const KEYS = [
     for (const k of KEYS) {
       payload[k] = localStorage.getItem(k) || null;
     }
-    console.log("SENDING TOKEN");
     // only send if we actually have a token
     if (payload.access_token) {
       chrome.runtime.sendMessage({ type: "QIKAID_PLUGIN_QA_TOKENS", payload });
