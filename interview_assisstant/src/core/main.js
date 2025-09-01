@@ -1,6 +1,43 @@
-import { 
-  fetchGPTResponse, sendImageToGPT,
-  generateInterviewPayload, generateInterviewPayloadForScreenshotMode} from './open-ai.js';
+// Feature flag to switch between qikaid-bot and open-ai
+const FLAG_QIKAID_BOT_ENABLED = false;
+
+// Import both modules
+import * as openAi from './open-ai.js';
+import * as qikaidBot from './qikaid-bot.js';
+
+// Wrapper functions to handle different parameter signatures
+const fetchGPTResponse = async (question, messages, apiKey, aiModel) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.fetchGPTResponse(question, messages);
+  } else {
+    return await openAi.fetchGPTResponse(question, messages, apiKey, aiModel);
+  }
+};
+
+const sendImageToGPT = async (imageDataUrl, messages, apiKey, aiModel) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.sendImageToGPT(imageDataUrl, messages);
+  } else {
+    return await openAi.sendImageToGPT(imageDataUrl, messages, apiKey, aiModel);
+  }
+};
+
+const generateInterviewPayload = async (jobRole, specialty, extraPrompt) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.generateInterviewPayload();
+  } else {
+    return openAi.generateInterviewPayload(jobRole, specialty, extraPrompt);
+  }
+};
+
+const generateInterviewPayloadForScreenshotMode = async (jobRole, specialty, extraPrompt) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.generateInterviewPayloadForScreenshotMode();
+  } else {
+    return openAi.generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt);
+  }
+};
+
 import {
   getApiKey, getJobRole, 
   getJobSpecialy, getExtraInterviewPrompt, 
@@ -366,12 +403,12 @@ document.addEventListener("contextmenu", (e) => {
     const prompt = prefix + selection;
     appendToOverlay(`➡️ You: ${prompt}`, false); // User input goes to right panel
     appendToOverlay("AI Response: ...thinking", true); // GPT thinking goes to left panel
+    const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await fetchGPTResponse(
       prompt, 
-      generateInterviewPayload(
-        jobRole, jobSpecialy, extraInterviewPrompt),
-        apiKey,
-        aiModel
+      messages,
+      apiKey,
+      aiModel
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "AI Response: ...thinking") el.remove();
@@ -413,11 +450,10 @@ screenshotBtn.onclick = async () => {
 
     // Send to GPT
     appendToOverlay("🧠 GPT: ...analyzing image", true); // GPT thinking goes to left panel
+    const messages = await generateInterviewPayloadForScreenshotMode(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await sendImageToGPT(
       dataUrl, 
-      generateInterviewPayloadForScreenshotMode(
-      jobRole, jobSpecialy, 
-      extraInterviewPrompt),
+      messages,
       apiKey,
       aiModel
     );
@@ -803,18 +839,14 @@ saveConfigBtn.onclick = () => {
 };
 
 // === Ask Button Logic ===
-function submitCustomPrompt() {
+async function submitCustomPrompt() {
   const value = "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: " + input.value.trim();
   if (!value) return;
   appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
   appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
   input.value = "";
-  fetchGPTResponse(value, generateInterviewPayload(
-    jobRole, jobSpecialy, 
-    extraInterviewPrompt),
-    apiKey,
-    aiModel
-  ).then(reply => {
+  const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
+  fetchGPTResponse(value, messages, apiKey, aiModel).then(reply => {
     document.querySelectorAll(".gpt-response").forEach((el) => {
       if (el.textContent === "🧠 GPT: ...thinking") el.remove();
     });
