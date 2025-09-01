@@ -9,6 +9,10 @@ class UserProfileService {
     constructor() {
         this.baseUrl = backendUrlApiUserConfig;
         this.pendingRequests = new Map();
+        this.profileCache = null;
+        this.cacheExpiry = null;
+        this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+        this.isInitialized = false;
     }
 
     /**
@@ -235,6 +239,73 @@ class UserProfileService {
             console.error('Error fetching formatted user profiles:', error);
             return [];
         }
+    }
+
+    /**
+     * Prefetch profiles on extension startup
+     * @returns {Promise<void>}
+     */
+    async prefetchProfiles() {
+        try {
+            console.log('Prefetching user profiles...');
+            const profiles = await this.getFormattedUserProfiles();
+            this.profileCache = profiles;
+            this.cacheExpiry = Date.now() + this.cacheTTL;
+            this.isInitialized = true;
+            console.log('Profiles prefetched and cached:', profiles.length, 'profiles');
+        } catch (error) {
+            console.error('Error prefetching profiles:', error);
+            this.isInitialized = false;
+        }
+    }
+
+    /**
+     * Get cached profiles or fetch if cache is stale
+     * @returns {Promise<Array>} Array of profiles with formatted names
+     */
+    async getCachedProfiles() {
+        // If cache is valid, return cached data
+        if (this.profileCache && this.cacheExpiry && this.cacheExpiry > Date.now()) {
+            console.log('Returning cached profiles:', this.profileCache.length, 'profiles');
+            return this.profileCache;
+        }
+
+        // Cache is stale or doesn't exist, fetch fresh data
+        console.log('Cache is stale or empty, fetching fresh profiles...');
+        try {
+            const profiles = await this.getFormattedUserProfiles();
+            this.profileCache = profiles;
+            this.cacheExpiry = Date.now() + this.cacheTTL;
+            return profiles;
+        } catch (error) {
+            console.error('Error fetching fresh profiles:', error);
+            // Return stale cache if available, otherwise empty array
+            return this.profileCache || [];
+        }
+    }
+
+    /**
+     * Refresh profiles in background (non-blocking)
+     * @returns {Promise<void>}
+     */
+    async refreshInBackground() {
+        try {
+            console.log('Refreshing profiles in background...');
+            const profiles = await this.getFormattedUserProfiles();
+            this.profileCache = profiles;
+            this.cacheExpiry = Date.now() + this.cacheTTL;
+            console.log('Background refresh completed:', profiles.length, 'profiles');
+        } catch (error) {
+            console.error('Error in background refresh:', error);
+        }
+    }
+
+    /**
+     * Check if profiles are initialized
+     * @returns {boolean}
+     */
+    isProfilesInitialized() {
+        return this.isInitialized;
     }
 }
 

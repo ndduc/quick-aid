@@ -31,6 +31,9 @@ setupWebSocketClassification();
 // Initialize MS Teams monitoring if meeting is detected
 setupMSTeamsMonitoring();
 
+// Prefetch user profiles on extension startup
+initializeUserProfiles();
+
 
 let isDragging = false, offsetX = 0, offsetY = 0;
 let isMinimized = false;
@@ -448,9 +451,14 @@ configBtn.onclick = () => {
     console.log("Config modal opened, checking for loadUserProfiles function...");
     console.log("configModal.loadUserProfiles exists:", !!configModal.loadUserProfiles);
     console.log("userProfileService available:", !!userProfileService);
+    console.log("Profiles initialized:", userProfileService.isProfilesInitialized());
+    
     if (configModal.loadUserProfiles) {
       console.log("Calling loadUserProfiles...");
       configModal.loadUserProfiles();
+      
+      // Optionally refresh in background if cache is stale
+      userProfileService.refreshInBackground();
     } else {
       console.error("loadUserProfiles function not found on configModal");
     }
@@ -495,6 +503,17 @@ function setupWebSocketClassification() {
 
   // Log WebSocket connection status
   console.log('WebSocket status:', webSocketService.getConnectionStatus());
+}
+
+// Function to initialize user profiles on startup
+async function initializeUserProfiles() {
+  try {
+    console.log('Initializing user profiles on startup...');
+    await userProfileService.prefetchProfiles();
+    console.log('User profiles initialized successfully');
+  } catch (error) {
+    console.error('Error initializing user profiles:', error);
+  }
 }
 
 // Function to setup MS Teams monitoring

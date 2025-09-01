@@ -550,16 +550,73 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   profileLabel.textContent = "User Profile:";
   profileLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
+  // Create container for dropdown and refresh button
+  const profileContainer = document.createElement("div");
+  profileContainer.style.cssText = `
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  `;
+
   const profileSelect = document.createElement("select");
   profileSelect.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
+    flex: 1;
     font-size: 13px;
     padding: 6px 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
   `;
+
+  const refreshBtn = document.createElement("button");
+  refreshBtn.textContent = "🔄";
+  refreshBtn.title = "Refresh Profiles";
+  refreshBtn.style.cssText = `
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    min-width: 40px;
+  `;
+
+  // Add hover effect
+  refreshBtn.addEventListener("mouseenter", () => {
+    refreshBtn.style.background = "#e9ecef";
+  });
+  refreshBtn.addEventListener("mouseleave", () => {
+    refreshBtn.style.background = "#f8f9fa";
+  });
+
+  // Add click handler for refresh
+  refreshBtn.addEventListener("click", async () => {
+    try {
+      refreshBtn.textContent = "⏳";
+      refreshBtn.disabled = true;
+      console.log("Manual refresh triggered");
+      
+      // Force refresh profiles
+      await userProfileService.refreshInBackground();
+      
+      // Reload the dropdown
+      await loadUserProfiles();
+      
+      refreshBtn.textContent = "🔄";
+      refreshBtn.disabled = false;
+      console.log("Manual refresh completed");
+    } catch (error) {
+      console.error("Error during manual refresh:", error);
+      refreshBtn.textContent = "❌";
+      setTimeout(() => {
+        refreshBtn.textContent = "🔄";
+        refreshBtn.disabled = false;
+      }, 2000);
+    }
+  });
+
+  profileContainer.appendChild(profileSelect);
+  profileContainer.appendChild(refreshBtn);
 
   const profileDetails = document.createElement("div");
   profileDetails.id = "profile-details";
@@ -582,8 +639,8 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
         return;
       }
 
-      console.log("Calling userProfileService.getFormattedUserProfiles()...");
-      const profiles = await userProfileService.getFormattedUserProfiles();
+      console.log("Getting cached profiles...");
+      const profiles = await userProfileService.getCachedProfiles();
       console.log("Received profiles:", profiles);
       
       // Clear existing options
@@ -606,10 +663,33 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
         profileSelect.appendChild(option);
       });
 
-      // Select first profile by default
+      // Restore previously selected profile or select first profile by default
       if (profiles.length > 0) {
-        profileSelect.value = profiles[0].userProfileId;
-        displayProfileDetails(profiles[0]);
+        chrome.storage.local.get(['selectedUserProfileId'], (result) => {
+          const savedProfileId = result.selectedUserProfileId;
+          let selectedProfile = null;
+          
+          if (savedProfileId) {
+            // Try to find the saved profile
+            selectedProfile = profiles.find(p => p.userProfileId === savedProfileId);
+            if (selectedProfile) {
+              profileSelect.value = savedProfileId;
+              displayProfileDetails(selectedProfile);
+              console.log('Restored previously selected profile from chrome storage:', selectedProfile.displayName);
+            } else {
+              console.log('Previously selected profile not found, selecting first profile');
+              selectedProfile = profiles[0];
+              profileSelect.value = profiles[0].userProfileId;
+              displayProfileDetails(profiles[0]);
+            }
+          } else {
+            // No saved profile, select first one
+            selectedProfile = profiles[0];
+            profileSelect.value = profiles[0].userProfileId;
+            displayProfileDetails(profiles[0]);
+            console.log('No previously selected profile, selecting first profile');
+          }
+        });
       }
     } catch (error) {
       console.error("Error loading user profiles:", error);
@@ -647,6 +727,18 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   // Event listener for profile selection
   profileSelect.addEventListener("change", async (e) => {
     const selectedProfileId = e.target.value;
+    
+    // Save selected profile to chrome storage
+    if (selectedProfileId) {
+      chrome.storage.local.set({ 'selectedUserProfileId': selectedProfileId }, () => {
+        console.log('Saved selected profile ID to chrome storage:', selectedProfileId);
+      });
+    } else {
+      chrome.storage.local.remove(['selectedUserProfileId'], () => {
+        console.log('Cleared selected profile ID from chrome storage');
+      });
+    }
+    
     if (!selectedProfileId) {
       profileDetails.style.display = "none";
       return;
@@ -661,7 +753,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   });
 
   profileSection.appendChild(profileLabel);
-  profileSection.appendChild(profileSelect);
+  profileSection.appendChild(profileContainer);
   profileSection.appendChild(profileDetails);
 
   // configModal.appendChild(textareaLabel);
