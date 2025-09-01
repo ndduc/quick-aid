@@ -1383,6 +1383,8 @@ function unlockUI() {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "LOCK_UI_AUTH_REQUIRED") {
     lockUIAndPromptLogin();
+  } else if (message.type === "UNLOCK_UI") {
+    unlockUI();
   }
   if (message.type === "SHOW_UI") {
     if (message.action === "toggle") {

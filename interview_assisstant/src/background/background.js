@@ -40,6 +40,21 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   } else if (msg?.type === "LOCK_UI_AUTH_REQUIRED") {
     broadcastLockUI();
     respond?.({ ok: true });
+  } else if (msg?.type === "CHECK_TOKEN_STATUS") {
+    // Check if tokens are now valid and unlock UI if so
+    getTokens().then(tokens => {
+      if (tokens && tokens.access_token && tokens.refresh_token) {
+        // Tokens are valid, unlock UI
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, {
+              type: "UNLOCK_UI"
+            }).catch(() => {});
+          });
+        });
+      }
+    });
+    respond?.({ ok: true });
   }
 });
 

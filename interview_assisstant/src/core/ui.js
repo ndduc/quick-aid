@@ -786,11 +786,101 @@ export function createLockModal() {
     text-align: center;
     font-family: inherit;
   `;
+  
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+  `;
+  
+  // Login button
+  const loginBtn = document.createElement('a');
+  loginBtn.href = "https://app.qikaid.com";
+  loginBtn.target = "_blank";
+  loginBtn.textContent = "Go to QikAid Login";
+  loginBtn.style.cssText = `
+    display: inline-block;
+    padding: 12px 28px;
+    background: #0078d4;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+  `;
+  
+  // Sync button
+  const syncBtn = document.createElement('button');
+  syncBtn.innerHTML = '🔄';
+  syncBtn.title = 'Sync & Validate Token';
+  syncBtn.style.cssText = `
+    padding: 12px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    min-width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  
+  // Add click handler for sync button
+  syncBtn.addEventListener('click', async () => {
+    syncBtn.innerHTML = '⏳';
+    syncBtn.style.background = '#6c757d';
+    syncBtn.disabled = true;
+    
+    try {
+      // Request token validation/refresh from background
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN_REQUEST" }, resolve);
+      });
+      
+      if (response && response.success) {
+        // Success - close modal and unlock UI
+        if (modal.parentNode) modal.parentNode.removeChild(modal);
+        // Trigger unlock (this will be handled by the token refresh success)
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ type: "CHECK_TOKEN_STATUS" });
+        }, 1000);
+      } else {
+        // Failed - reset button
+        syncBtn.innerHTML = '🔄';
+        syncBtn.style.background = '#28a745';
+        syncBtn.disabled = false;
+        syncBtn.title = 'Sync failed - try again';
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+      syncBtn.innerHTML = '❌';
+      syncBtn.style.background = '#dc3545';
+      syncBtn.disabled = false;
+      syncBtn.title = 'Sync failed - try again';
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        syncBtn.innerHTML = '🔄';
+        syncBtn.style.background = '#28a745';
+        syncBtn.title = 'Sync & Validate Token';
+      }, 2000);
+    }
+  });
+  
+  buttonContainer.appendChild(loginBtn);
+  buttonContainer.appendChild(syncBtn);
+  
   box.innerHTML = `
     <h2 style="margin-bottom: 18px; color: #222;">Authentication Required</h2>
     <p style="margin-bottom: 24px; color: #444;">Your session has expired or you are not logged in.<br>Please log in to continue using QikAid.</p>
-    <a href="https://app.qikaid.com" target="_blank" style="display:inline-block;padding:12px 28px;background:#0078d4;color:#fff;border-radius:6px;text-decoration:none;font-size:16px;font-weight:600;">Go to QikAid Login</a>
   `;
+  box.appendChild(buttonContainer);
   modal.appendChild(box);
   return modal;
 }
