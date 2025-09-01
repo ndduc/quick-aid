@@ -18,8 +18,8 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
     
     respond?.({ ok: true });
   } else if (msg?.type === "REFRESH_TOKEN_REQUEST") {
-    // Handle token refresh request from websocket service
-    console.log("[QikAid] Token refresh requested by websocket service");
+    // Handle token refresh request from websocket service or validator
+    console.log("[QikAid] Token refresh requested");
     refreshToken().then(success => {
       if (success) {
         // Notify all content scripts about the token refresh
@@ -37,6 +37,9 @@ chrome.runtime.onMessage.addListener((msg, sender, respond) => {
       respond?.({ success });
     });
     return true; // Keep message channel open for async response
+  } else if (msg?.type === "LOCK_UI_AUTH_REQUIRED") {
+    broadcastLockUI();
+    respond?.({ ok: true });
   }
 });
 
@@ -60,10 +63,22 @@ function isTokenExpiringSoon(tokenTimestamp) {
   return (currentTime - tokenTime) >= (24 * 60 * 60 * 1000 - eightHoursInMs); // Assuming 24h token lifetime
 }
 
+// Helper: Broadcast UI lock message
+function broadcastLockUI() {
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, {
+        type: "LOCK_UI_AUTH_REQUIRED"
+      }).catch(() => {});
+    });
+  });
+}
+
 // Refresh token using the refresh endpoint
 async function refreshToken() {
-  if (!TOKENS?.refresh_token || !TOKENS?.user_identifier) {
-    console.warn("[QikAid] No refresh token or user identifier available");
+  if (!TOKENS?.refresh_token || !TOKENS?.cognitoId) {
+    console.warn("[QikAid] No refresh token or cognitoId available");
+    broadcastLockUI();
     return false;
   }
 
@@ -106,6 +121,7 @@ async function refreshToken() {
     return true;
   } catch (error) {
     console.error("[QikAid] Token refresh failed:", error);
+    broadcastLockUI();
     return false;
   }
 }
@@ -148,8 +164,6 @@ function setupTokenRefresh() {
     refreshToken();
   }
 }
-
-
 
 // Click the toolbar button to show/hide the UI
 chrome.action.onClicked.addListener(async (tab) => {

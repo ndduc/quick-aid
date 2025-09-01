@@ -10,7 +10,7 @@ import {webSocketService} from './websocket-service.js'
 import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-ms-team.js'
 import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
 import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
-  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
+  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
 
 
 let apiKey = getApiKey();
@@ -160,6 +160,9 @@ minimizeBtn.addEventListener("click", () => {
     
     // Show the minimize button again when restored
     minimizeBtn.style.display = "block";
+
+    // If UI was locked, ensure modal is visible again after restore
+    ensureLockModalVisible();
   } 
   else {
     // Minimize to look like a warm yellow extension popup
@@ -231,6 +234,9 @@ minimizeBtn.addEventListener("click", () => {
     
     // Hide the minimize button when minimized
     minimizeBtn.style.display = "none";
+
+    // If lock modal is present, remove it while minimized
+    if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
   }
 });
 
@@ -541,17 +547,18 @@ function setupMSTeamsMonitoring() {
 
 // Function to update MS Teams status indicator
 function updateMSTeamsStatus(isActive) {
-  if (!msTeamsStatus) return;
+  // if (!msTeamsStatus) return;
   
-  if (isActive) {
-    msTeamsStatus.textContent = "🎯";
-    msTeamsStatus.title = "MS Teams: Active & Monitoring";
-    msTeamsStatus.style.color = "#28a745"; // Green
-  } else {
-    msTeamsStatus.textContent = "🎯";
-    msTeamsStatus.title = "MS Teams: Not Detected";
-    msTeamsStatus.style.color = "#6c757d"; // Gray
-  }
+  // if (isActive) {
+  //   msTeamsStatus.textContent = "🎯";
+  //   msTeamsStatus.title = "MS Teams: Active & Monitoring";
+  //   msTeamsStatus.style.color = "#28a745"; // Green
+  // } else {
+  //   msTeamsStatus.textContent = "🎯";
+  //   msTeamsStatus.title = "MS Teams: Not Detected";
+  //   msTeamsStatus.style.color = "#6c757d"; // Gray
+  // }
+  // Deprecated
 }
 
 // Function to display classification results in the middle panel
@@ -1325,8 +1332,58 @@ function showUI() {
 // Make the function globally available for background script communication
 window.showUI = showUI;
 
-// Listen for messages from background script to show/hide UI
+// --- UI Lockdown on Auth Failure ---
+let lockModal = null;
+let isUILocked = false;
+
+function ensureLockModalVisible() {
+  if (!isUILocked) return;
+  if (isMinimized) return; // don't show modal in minimized state
+  if (lockModal && lockModal.parentNode) return; // already shown
+
+  lockModal = createLockModal();
+
+  if (lockModal && overlay) {
+    overlay.style.position = overlay.style.position || 'fixed';
+    lockModal.style.position = 'absolute';
+    const headerHeight = header?.offsetHeight || 40;
+    lockModal.style.top = headerHeight + 'px';
+    lockModal.style.left = '0';
+    lockModal.style.right = '0';
+    lockModal.style.bottom = '0';
+    overlay.appendChild(lockModal);
+  }
+}
+
+function lockUIAndPromptLogin() {
+  isUILocked = true;
+
+  if (contentContainer) contentContainer.style.pointerEvents = 'none';
+  if (inputSection) inputSection.style.pointerEvents = 'none';
+  if (contentContainer) contentContainer.style.opacity = '0.5';
+  if (inputSection) inputSection.style.opacity = '0.5';
+
+  // Remove any existing lock modal before re-adding (only when not minimized)
+  if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
+
+  ensureLockModalVisible();
+}
+
+function unlockUI() {
+  isUILocked = false;
+  if (contentContainer) contentContainer.style.pointerEvents = '';
+  if (inputSection) inputSection.style.pointerEvents = '';
+  if (contentContainer) contentContainer.style.opacity = '';
+  if (inputSection) inputSection.style.opacity = '';
+  if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
+  lockModal = null;
+}
+
+// Listen for lock message from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "LOCK_UI_AUTH_REQUIRED") {
+    lockUIAndPromptLogin();
+  }
   if (message.type === "SHOW_UI") {
     if (message.action === "toggle") {
       if (window.isUIHidden) {

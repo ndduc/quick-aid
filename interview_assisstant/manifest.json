@@ -23,6 +23,11 @@
       "matches": ["http://localhost:3000/*"],
       "js": ["cs/cs_app.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*", "https://teams.microsoft.com/*", "http://localhost:3000/*"],
+      "js": ["cs/cs_validator.js"],
+      "run_at": "document_idle"
     }
   ],
   "action": {

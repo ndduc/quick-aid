@@ -765,4 +765,34 @@ export const CONTEXT_MENU_OPTIONS = [
   },
 ];
 
+export function createLockModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  const box = document.createElement('div');
+  box.style.cssText = `
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+    padding: 40px 32px;
+    max-width: 400px;
+    text-align: center;
+    font-family: inherit;
+  `;
+  box.innerHTML = `
+    <h2 style="margin-bottom: 18px; color: #222;">Authentication Required</h2>
+    <p style="margin-bottom: 24px; color: #444;">Your session has expired or you are not logged in.<br>Please log in to continue using QikAid.</p>
+    <a href="https://app.qikaid.com" target="_blank" style="display:inline-block;padding:12px 28px;background:#0078d4;color:#fff;border-radius:6px;text-decoration:none;font-size:16px;font-weight:600;">Go to QikAid Login</a>
+  `;
+  modal.appendChild(box);
+  return modal;
+}
+
 
