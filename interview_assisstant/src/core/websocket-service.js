@@ -4,6 +4,8 @@ import { getAccessToken, getCognitoId,
    getUserIdentifier, waitForAccessToken,
     waitForCognitoId, waitForUserIdentifier } from './token-store.js';
 
+import { backendUrlComprehendWebSocket } from './environment.js';
+
 class WebSocketService {
   constructor() {
     this.socket = null;
@@ -12,7 +14,7 @@ class WebSocketService {
     this.maxReconnectAttempts = 1000;
     this.reconnectDelay = 1000; // 1 second
     // this.backendUrl = 'wss://api.qikaid.com/comprehend/ws/transcript?access_token=';
-    this.backendUrl = 'wss://5c00f7077846.ngrok-free.app/comprehend/ws/transcript?access_token=';
+    this.backendUrl = backendUrlComprehendWebSocket;
     this.messageQueue = [];
     this.onClassificationReceived = null;
     
@@ -29,25 +31,78 @@ class WebSocketService {
     this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
     this.cognitoId = await getCognitoId() || await waitForCognitoId(10000);
     this.userIdentifier = await getUserIdentifier() || await waitForUserIdentifier(10000);
-    this.backendUrl = this.backendUrl 
-      + this.accessToken 
-      + "&cognitoId=" + this.cognitoId 
-      + "&userIdentifier=" + this.userIdentifier;
+    
+    // Check if token needs refresh before connecting
+    await this.checkAndRefreshToken();
+    
+    this.updateBackendUrlWithToken();
     this.connect();
 
     // Start meeting detection
     this.startMeetingDetection();
 
-    // if token rotates, reconnect with the new one
-    // onTokenChange(t => {
-    //   const next = t?.access_token;
-    //   if (next && next !== this.accessToken) {
-    //     this.accessToken = next;
-    //     this.#reconnect('token-rotated');
-    //   }
-    // });
+    // Set up token refresh monitoring
+    this.setupTokenRefreshMonitoring();
 
     // return this; // so you can: const svc = await new WebSocketService().init()
+  }
+
+  // Check if token needs refresh and refresh if necessary
+  async checkAndRefreshToken() {
+    try {
+      const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+      if (!QIKAID_PLUGIN_QA_TOKENS?.token_timestamp) {
+        console.log("[WebSocket] No token timestamp available");
+        return;
+      }
+
+      const tokenTime = parseInt(QIKAID_PLUGIN_QA_TOKENS.token_timestamp);
+      const currentTime = Date.now();
+      const eightHoursInMs = 8 * 60 * 60 * 1000;
+      
+      // Check if token will expire within 8 hours (assuming 24h token lifetime)
+      const isExpiringSoon = (currentTime - tokenTime) >= (24 * 60 * 60 * 1000 - eightHoursInMs);
+      
+      if (isExpiringSoon) {
+        console.log("[WebSocket] Token expiring soon, requesting refresh from background script");
+        // Request token refresh from background script
+        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN_REQUEST" });
+        
+        // Wait a bit for refresh to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Get updated token
+        this.accessToken = await getAccessToken();
+      }
+    } catch (error) {
+      console.error("[WebSocket] Error checking token refresh:", error);
+    }
+  }
+
+  // Update backend URL with current token
+  updateBackendUrlWithToken() {
+    this.backendUrl = this.backendUrl
+      + this.accessToken 
+      + "&cognitoId=" + this.cognitoId 
+      + "&userIdentifier=" + this.userIdentifier;
+  }
+
+  // Set up token refresh monitoring
+  setupTokenRefreshMonitoring() {
+    // Listen for token refresh notifications from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === "TOKEN_REFRESHED") {
+        console.log("[WebSocket] Token refreshed, updating connection");
+        this.accessToken = message.newAccessToken;
+        this.updateBackendUrlWithToken();
+        
+        // Reconnect with new token
+        if (this.isConnected) {
+          this.disconnect();
+          setTimeout(() => this.connect(), 1000);
+        }
+      }
+    });
   }
 
   // Start meeting detection service

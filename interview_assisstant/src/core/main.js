@@ -7,7 +7,7 @@ import {
   getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
 import {webSocketService} from './websocket-service.js'
-import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
+import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-ms-team.js'
 import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
 import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
   createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
