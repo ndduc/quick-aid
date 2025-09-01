@@ -576,12 +576,15 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   // Function to load and display profiles
   const loadUserProfiles = async () => {
     try {
+      console.log("loadUserProfiles called");
       if (!userProfileService) {
         console.log("User profile service not available");
         return;
       }
 
+      console.log("Calling userProfileService.getFormattedUserProfiles()...");
       const profiles = await userProfileService.getFormattedUserProfiles();
+      console.log("Received profiles:", profiles);
       
       // Clear existing options
       profileSelect.innerHTML = '<option value="">Select a profile...</option>';
@@ -625,21 +628,17 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     const updatedDate = new Date(profile.updatedAt).toLocaleDateString();
 
     profileDetails.innerHTML = `
-      <div style="margin-bottom: 8px;">
-        <strong>User Info:</strong><br>
-        <span style="color: #666;">${profile.userInfo || 'Not specified'}</span>
+      <div style="margin-bottom: 12px;">
+        <label for="user-info-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">User Info:</label>
+        <textarea id="user-info-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.userInfo || 'Not specified'}</textarea>
       </div>
-      <div style="margin-bottom: 8px;">
-        <strong>Purpose:</strong><br>
-        <span style="color: #666;">${profile.purpose || 'Not specified'}</span>
+      <div style="margin-bottom: 12px;">
+        <label for="purpose-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Purpose:</label>
+        <textarea id="purpose-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.purpose || 'Not specified'}</textarea>
       </div>
-      <div style="margin-bottom: 8px;">
-        <strong>Bot Role:</strong><br>
-        <span style="color: #666;">${profile.botRole || 'Not specified'}</span>
-      </div>
-      <div style="font-size: 11px; color: #888;">
-        <span>Created: ${createdDate}</span> | 
-        <span>Updated: ${updatedDate}</span>
+      <div style="margin-bottom: 12px;">
+        <label for="bot-role-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Bot Role:</label>
+        <textarea id="bot-role-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.botRole || 'Not specified'}</textarea>
       </div>
     `;
     profileDetails.style.display = "block";

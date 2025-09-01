@@ -1,5 +1,5 @@
 let backendUrlAuth = "api.qikaid.com";
-let backebdUrlApi = "localhost:8083";
+let backebdUrlApi = "https://fa4ff3e8a19f.ngrok-free.app";
 let backendUrlComprehend = "wss://f5014ba23ec5.ngrok-free.app/";
 let backendUrlComprehendWebSocket = backendUrlComprehend + "comprehend/ws/transcript?access_token=";
 let backendUrlAuthRefresh = backendUrlAuth + "/auth/token/refresh";

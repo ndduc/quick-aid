@@ -445,8 +445,14 @@ configBtn.onclick = () => {
     // Refresh config values from localStorage when opening
     refreshConfigValues();
     // Load user profiles when opening config modal
+    console.log("Config modal opened, checking for loadUserProfiles function...");
+    console.log("configModal.loadUserProfiles exists:", !!configModal.loadUserProfiles);
+    console.log("userProfileService available:", !!userProfileService);
     if (configModal.loadUserProfiles) {
+      console.log("Calling loadUserProfiles...");
       configModal.loadUserProfiles();
+    } else {
+      console.error("loadUserProfiles function not found on configModal");
     }
     configModal.style.display = "block";
   } else {

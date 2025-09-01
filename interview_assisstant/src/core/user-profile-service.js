@@ -16,21 +16,30 @@ class UserProfileService {
      * @returns {Promise<Object>} User configuration with profiles
      */
     async getUserConfig() {
-        const endpoint = `/${this.getCurrentUserCognitoId()}/config`;
+        console.log('getUserConfig called');
+        const userId = await this.getCurrentUserCognitoId();
+        console.log('User ID:', userId);
+        const endpoint = `/${userId}/config`;
+        console.log('Making API request to endpoint:', endpoint);
         return this.makeRequest(endpoint);
     }
 
     /**
      * Get current user's Cognito ID from QIKAID_PLUGIN_QA_TOKENS
-     * @returns {string|null} User's Cognito ID
+     * @returns {Promise<string|null>} User's Cognito ID
      */
-    getCurrentUserCognitoId() {
+    async getCurrentUserCognitoId() {
         try {
-            const tokens = localStorage.getItem('QIKAID_PLUGIN_QA_TOKENS');
-            if (tokens) {
-                const parsedTokens = JSON.parse(tokens);
-                return parsedTokens.userId || null;
+            console.log('getCurrentUserCognitoId called');
+            const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+            console.log('QIKAID_PLUGIN_QA_TOKENS from chrome.storage:', QIKAID_PLUGIN_QA_TOKENS);
+            if (QIKAID_PLUGIN_QA_TOKENS) {
+                console.log('Parsed tokens:', QIKAID_PLUGIN_QA_TOKENS);
+                const userId = QIKAID_PLUGIN_QA_TOKENS.userId || null;
+                console.log('Extracted userId:', userId);
+                return userId;
             }
+            console.log('No tokens found in chrome.storage');
             return null;
         } catch (error) {
             console.error('Error getting user ID from QIKAID_PLUGIN_QA_TOKENS:', error);
@@ -40,13 +49,13 @@ class UserProfileService {
 
     /**
      * Get user information from QIKAID_PLUGIN_QA_TOKENS
-     * @returns {Object|null} User information
+     * @returns {Promise<Object|null>} User information
      */
-    getUserInfo() {
+    async getUserInfo() {
         try {
-            const tokens = localStorage.getItem('QIKAID_PLUGIN_QA_TOKENS');
-            if (tokens) {
-                return JSON.parse(tokens);
+            const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+            if (QIKAID_PLUGIN_QA_TOKENS) {
+                return QIKAID_PLUGIN_QA_TOKENS;
             }
             return null;
         } catch (error) {
@@ -57,14 +66,13 @@ class UserProfileService {
 
     /**
      * Get authentication token from QIKAID_PLUGIN_QA_TOKENS
-     * @returns {string|null} Auth token
+     * @returns {Promise<string|null>} Auth token
      */
-    getAuthToken() {
+    async getAuthToken() {
         try {
-            const tokens = localStorage.getItem('QIKAID_PLUGIN_QA_TOKENS');
-            if (tokens) {
-                const parsedTokens = JSON.parse(tokens);
-                return parsedTokens.accessToken || parsedTokens.token || null;
+            const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+            if (QIKAID_PLUGIN_QA_TOKENS) {
+                return QIKAID_PLUGIN_QA_TOKENS.access_token || null;
             }
             return null;
         } catch (error) {
@@ -80,7 +88,7 @@ class UserProfileService {
      * @returns {Promise<Object>} Response data
      */
     async makeRequest(endpoint, options = {}) {
-        const token = this.getAuthToken();
+        const token = await this.getAuthToken();
         
         if (!token) {
             throw new Error('No access token found. Please login again.');
@@ -117,10 +125,11 @@ class UserProfileService {
      * @returns {Promise<Object>} Response data
      */
     async executeRequest(url, options = {}) {
+        const token = await this.getAuthToken();
         const response = await fetch(url, {
             ...options,
             headers: {
-                'Authorization': `Bearer ${this.getAuthToken()}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Access-Control-Request-Method': 'GET',
                 ...options.headers,
@@ -154,8 +163,12 @@ class UserProfileService {
      */
     async getUserProfiles() {
         try {
+            console.log('getUserProfiles called');
             const config = await this.getUserConfig();
-            return config.profiles || [];
+            console.log('User config received:', config);
+            const profiles = config.profiles || [];
+            console.log('Profiles extracted:', profiles);
+            return profiles;
         } catch (error) {
             console.error('Error fetching user profiles:', error);
             return [];
@@ -209,11 +222,15 @@ class UserProfileService {
      */
     async getFormattedUserProfiles() {
         try {
+            console.log('getFormattedUserProfiles called');
             const profiles = await this.getUserProfiles();
-            return profiles.map(profile => ({
+            console.log('Raw profiles from getUserProfiles:', profiles);
+            const formattedProfiles = profiles.map(profile => ({
                 ...profile,
                 displayName: this.extractProfileName(profile.userProfileName)
             }));
+            console.log('Formatted profiles:', formattedProfiles);
+            return formattedProfiles;
         } catch (error) {
             console.error('Error fetching formatted user profiles:', error);
             return [];
