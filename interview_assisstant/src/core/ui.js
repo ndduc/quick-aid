@@ -260,7 +260,7 @@ export function createConfigBtn() {
 }
 
 //  CONFIGURATION MODAL (MODEL - DIALOG)
-export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, websocketBackendUrl) {
+export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, websocketBackendUrl, userProfileService) {
   const configModal = document.createElement("div");
   configModal.style.cssText = `
     display: none;
@@ -538,10 +538,141 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   configModal.appendChild(websocketUrlLabel);
   configModal.appendChild(websocketUrlInput);
 
+  // User Profile Section
+  const profileSection = document.createElement("div");
+  profileSection.style.cssText = `
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  `;
+
+  const profileLabel = document.createElement("label");
+  profileLabel.textContent = "User Profile:";
+  profileLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  const profileSelect = document.createElement("select");
+  profileSelect.style.cssText = `
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
+
+  const profileDetails = document.createElement("div");
+  profileDetails.id = "profile-details";
+  profileDetails.style.cssText = `
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    font-size: 12px;
+    display: none;
+  `;
+
+  // Function to load and display profiles
+  const loadUserProfiles = async () => {
+    try {
+      if (!userProfileService) {
+        console.log("User profile service not available");
+        return;
+      }
+
+      const profiles = await userProfileService.getFormattedUserProfiles();
+      
+      // Clear existing options
+      profileSelect.innerHTML = '<option value="">Select a profile...</option>';
+      
+      if (profiles.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No profiles available";
+        option.disabled = true;
+        profileSelect.appendChild(option);
+        return;
+      }
+
+      // Add profile options
+      profiles.forEach((profile, index) => {
+        const option = document.createElement("option");
+        option.value = profile.userProfileId;
+        option.textContent = profile.displayName;
+        profileSelect.appendChild(option);
+      });
+
+      // Select first profile by default
+      if (profiles.length > 0) {
+        profileSelect.value = profiles[0].userProfileId;
+        displayProfileDetails(profiles[0]);
+      }
+    } catch (error) {
+      console.error("Error loading user profiles:", error);
+      profileSelect.innerHTML = '<option value="">Error loading profiles</option>';
+    }
+  };
+
+  // Function to display profile details
+  const displayProfileDetails = (profile) => {
+    if (!profile) {
+      profileDetails.style.display = "none";
+      return;
+    }
+
+    const createdDate = new Date(profile.createdAt).toLocaleDateString();
+    const updatedDate = new Date(profile.updatedAt).toLocaleDateString();
+
+    profileDetails.innerHTML = `
+      <div style="margin-bottom: 8px;">
+        <strong>User Info:</strong><br>
+        <span style="color: #666;">${profile.userInfo || 'Not specified'}</span>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <strong>Purpose:</strong><br>
+        <span style="color: #666;">${profile.purpose || 'Not specified'}</span>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <strong>Bot Role:</strong><br>
+        <span style="color: #666;">${profile.botRole || 'Not specified'}</span>
+      </div>
+      <div style="font-size: 11px; color: #888;">
+        <span>Created: ${createdDate}</span> | 
+        <span>Updated: ${updatedDate}</span>
+      </div>
+    `;
+    profileDetails.style.display = "block";
+  };
+
+  // Event listener for profile selection
+  profileSelect.addEventListener("change", async (e) => {
+    const selectedProfileId = e.target.value;
+    if (!selectedProfileId) {
+      profileDetails.style.display = "none";
+      return;
+    }
+
+    try {
+      const profile = await userProfileService.getUserProfile(selectedProfileId);
+      displayProfileDetails(profile);
+    } catch (error) {
+      console.error("Error loading profile details:", error);
+    }
+  });
+
+  profileSection.appendChild(profileLabel);
+  profileSection.appendChild(profileSelect);
+  profileSection.appendChild(profileDetails);
+
   // configModal.appendChild(textareaLabel);
   // configModal.appendChild(textarea);
 
+  configModal.appendChild(profileSection);
   configModal.appendChild(saveConfigBtn);
+
+  // Store loadUserProfiles function for external access
+  configModal.loadUserProfiles = loadUserProfiles;
   return {configModal, apiKeyInput,
     saveConfigBtn,  openaiModelInput, 
     jobRoleInput, specificInterviewInput,

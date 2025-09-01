@@ -7,7 +7,8 @@ const KEYS = [
     "token_timestamp",
     "user_identifier",
     // "theme",
-    "cognitoId"
+    "cognitoId",
+    "userId"
   ];
   
   function sendTokens() {

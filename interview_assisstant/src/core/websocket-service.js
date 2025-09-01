@@ -450,6 +450,5 @@ class WebSocketService {
 
 // Export singleton
 export const webSocketService = new WebSocketService();
-webSocketService.initialize();
 
 export { WebSocketService };

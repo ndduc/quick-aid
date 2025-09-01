@@ -11,6 +11,7 @@ import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-
 import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
 import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
   createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
+import userProfileService from './user-profile-service.js'
 
 
 let apiKey = getApiKey();
@@ -24,6 +25,7 @@ let extraInterviewPrompt = getExtraInterviewPrompt();
 
 
 // Initialize WebSocket service and set up classification callback
+webSocketService.initialize();
 setupWebSocketClassification();
 
 // Initialize MS Teams monitoring if meeting is detected
@@ -434,7 +436,7 @@ const {
    saveConfigBtn,
    openaiModelInput, jobRoleInput, 
    specificInterviewInput, extraInteviewPromptInput, websocketUrlInput
-  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, getWebSocketBackendUrl());
+  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, getWebSocketBackendUrl(), userProfileService);
 document.body.appendChild(configModal);
 
 configBtn.onclick = () => {
@@ -442,6 +444,10 @@ configBtn.onclick = () => {
   if (isConfigOpen) {
     // Refresh config values from localStorage when opening
     refreshConfigValues();
+    // Load user profiles when opening config modal
+    if (configModal.loadUserProfiles) {
+      configModal.loadUserProfiles();
+    }
     configModal.style.display = "block";
   } else {
     configModal.style.display = "none";
