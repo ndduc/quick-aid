@@ -214,19 +214,6 @@ export function createInputSection(submitCustomPrompt) {
     margin-left: 8px;
   `;
 
-  const msTeamsTestBtn = document.createElement("button");
-  msTeamsTestBtn.textContent = "🎯";
-  msTeamsTestBtn.title = "Test MS Teams Caption";
-  msTeamsTestBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #6f42c1;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
 
   const statusBtn = document.createElement("button");
   statusBtn.textContent = "🔌";
@@ -242,49 +229,18 @@ export function createInputSection(submitCustomPrompt) {
     display: none;
   `;
 
-  const clearDuplicatesBtn = document.createElement("button");
-  clearDuplicatesBtn.textContent = "🧹";
-  clearDuplicatesBtn.title = "Clear Duplicates";
-  clearDuplicatesBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
-
-  const modeStatusBtn = document.createElement("button");
-  modeStatusBtn.textContent = "🔄";
-  modeStatusBtn.title = "Show Transcription Mode Status";
-  modeStatusBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
-
   inputSection.appendChild(input);
   inputSection.appendChild(askBtn);
   inputSection.appendChild(reconnectBtn);
   inputSection.appendChild(screenshotBtn);
-  inputSection.appendChild(msTeamsTestBtn);
   inputSection.appendChild(statusBtn);
-  inputSection.appendChild(clearDuplicatesBtn);
-  inputSection.appendChild(modeStatusBtn);
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitCustomPrompt();
   });
 
 
-  return {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn}
+  return {inputSection, input, askBtn, reconnectBtn, screenshotBtn, statusBtn}
 } 
 
 

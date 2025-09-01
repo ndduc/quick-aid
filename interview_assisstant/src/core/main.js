@@ -9,7 +9,8 @@ import {checkTranscript} from './transcribing-logic.js'
 import {webSocketService} from './websocket-service.js'
 import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
 import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
-import {createHeader, createContentArea, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
+import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
+  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
 
 
 let apiKey = getApiKey();
@@ -116,7 +117,7 @@ if (AUTO_UI_MANAGEMENT_ENABLED) {
 } else {
   // UI always visible (traditional behavior)
   overlay.style.display = "block";
-  console.log("uto UI Management DISABLED - UI always visible");
+  console.log("Auto UI Management DISABLED - UI always visible");
 }
 
 // Add minimize functionality
@@ -247,9 +248,8 @@ leftResizer.style.cursor = "ne-resize";
 
 
 // === Bottom Input Section ===
-const {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
+const {inputSection, input, askBtn, reconnectBtn, screenshotBtn, statusBtn} = createInputSection(submitCustomPrompt);
 overlay.appendChild(inputSection);
-
 
 askBtn.onclick = submitCustomPrompt;
 
@@ -305,39 +305,11 @@ reconnectBtn.onclick = async () => {
     appendToOverlay("❌ Reconnection error: " + error.message, true);
   }
 };
-msTeamsTestBtn.onclick = () => {
-  testMSCaptionProcessing(appendToOverlay, updateLivePreview);
-  
-  // Also display in middle panel for immediate feedback
-  const testText = "This is a test caption from Microsoft Teams";
-  displayTranscriptInMiddlePanel(testText, "Test Speaker");
-};
 
 statusBtn.onclick = () => {
   checkWebSocketStatus();
 };
 
-clearDuplicatesBtn.onclick = () => {
-  // Import and call the clear duplicates function
-  import('./transcribing-ms-team.js').then(({ clearTranscriptDuplicates }) => {
-    clearTranscriptDuplicates();
-    appendToOverlay("🧹 Duplicates cleared from transcript and middle panel", true);
-  }).catch(err => {
-    console.error('Failed to import clearTranscriptDuplicates:', err);
-    appendToOverlay("❌ Failed to clear duplicates", true);
-  });
-};
-
-modeStatusBtn.onclick = () => {
-  // Import and call the mode status function
-  import('./transcribing-ms-team.js').then(({ displayTranscriptionModeStatus }) => {
-    const statusText = displayTranscriptionModeStatus();
-    appendToOverlay(statusText, true);
-  }).catch(err => {
-    console.error('Failed to import displayTranscriptionModeStatus:', err);
-    appendToOverlay("❌ Failed to get mode status", true);
-  });
-};
 
 
 
@@ -828,7 +800,6 @@ function appendImageToOverlay(dataUrl) {
 let livePreviewElement = null;
 let livePreviewTimeout = null;
 let lastLivePreviewText = '';
-
 
 function updateLivePreview(text) {
   // Check if this text is already present in the transcript area
