@@ -10,9 +10,101 @@ class UserProfileService {
         this.baseUrl = backendUrlApiUserConfig;
         this.pendingRequests = new Map();
         this.profileCache = null;
+        this.settingsCache = null;
         this.cacheExpiry = null;
         this.cacheTTL = 5 * 60 * 1000; // 5 minutes
         this.isInitialized = false;
+        
+        // Automatically load cache from storage when service is created
+        this.autoLoadCache();
+    }
+
+    /**
+     * Automatically load cache from storage when service is created
+     * @returns {Promise<void>}
+     */
+    async autoLoadCache() {
+        try {
+            console.log('Auto-loading cache from storage...');
+            await this.loadCacheFromStorage();
+            
+            // If cache is stale or empty, prefetch in background
+            if (!this.isInitialized || 
+                (this.cacheExpiry && Date.now() >= this.cacheExpiry)) {
+                console.log('Cache stale or empty, prefetching in background...');
+                // Don't await this - let it run in background
+                this.prefetchProfiles().catch(error => {
+                    console.error('Background prefetch failed:', error);
+                });
+            } else {
+                console.log('Using cached data from storage');
+            }
+        } catch (error) {
+            console.error('Error auto-loading cache:', error);
+        }
+    }
+
+    /**
+     * Save cache to chrome storage
+     * @returns {Promise<void>}
+     */
+    async saveCacheToStorage() {
+        try {
+            // Get the current selected profile ID from storage
+            const selectedProfileResult = await new Promise((resolve) => {
+                chrome.storage.local.get(['selectedUserProfileId'], resolve);
+            });
+            
+            const cacheData = {
+                profileCache: this.profileCache,
+                settingsCache: this.settingsCache,
+                cacheExpiry: this.cacheExpiry,
+                isInitialized: this.isInitialized,
+                selectedUserProfileId: selectedProfileResult.selectedUserProfileId
+            };
+            
+            await new Promise((resolve) => {
+                chrome.storage.local.set({ 'userProfileCache': cacheData }, resolve);
+            });
+            
+            console.log('Cache saved to chrome storage with profile ID:', selectedProfileResult.selectedUserProfileId);
+        } catch (error) {
+            console.error('Error saving cache to storage:', error);
+        }
+    }
+
+    /**
+     * Load cache from chrome storage
+     * @returns {Promise<void>}
+     */
+    async loadCacheFromStorage() {
+        try {
+            const result = await new Promise((resolve) => {
+                chrome.storage.local.get(['userProfileCache'], resolve);
+            });
+            
+            const cacheData = result.userProfileCache;
+            if (cacheData) {
+                this.profileCache = cacheData.profileCache;
+                this.settingsCache = cacheData.settingsCache;
+                this.cacheExpiry = cacheData.cacheExpiry;
+                this.isInitialized = cacheData.isInitialized;
+                
+                // Restore selected profile ID if it exists in cache
+                if (cacheData.selectedUserProfileId) {
+                    await new Promise((resolve) => {
+                        chrome.storage.local.set({ 'selectedUserProfileId': cacheData.selectedUserProfileId }, resolve);
+                    });
+                    console.log('Selected profile ID restored from cache:', cacheData.selectedUserProfileId);
+                }
+                
+                console.log('Cache loaded from chrome storage');
+                console.log('Profiles cached:', this.profileCache ? this.profileCache.length : 0);
+                console.log('Settings cached:', this.settingsCache ? 'Yes' : 'No');
+            }
+        } catch (error) {
+            console.error('Error loading cache from storage:', error);
+        }
     }
 
     /**
@@ -21,11 +113,28 @@ class UserProfileService {
      */
     async getUserConfig() {
         console.log('getUserConfig called');
+        
+        // Check if we have cached settings
+        if (this.settingsCache && this.cacheExpiry && Date.now() < this.cacheExpiry) {
+            console.log('Returning cached user config');
+            return this.settingsCache;
+        }
+        
         const userId = await this.getCurrentUserCognitoId();
         console.log('User ID:', userId);
         const endpoint = `/${userId}/config`;
         console.log('Making API request to endpoint:', endpoint);
-        return this.makeRequest(endpoint);
+        
+        const userConfig = await this.makeRequest(endpoint);
+        
+        // Cache the settings
+        this.settingsCache = userConfig;
+        this.cacheExpiry = Date.now() + this.cacheTTL;
+        
+        // Save to chrome storage
+        await this.saveCacheToStorage();
+        
+        return userConfig;
     }
 
     /**
@@ -242,19 +351,31 @@ class UserProfileService {
     }
 
     /**
-     * Prefetch profiles on extension startup
+     * Prefetch profiles and settings on extension startup
      * @returns {Promise<void>}
      */
     async prefetchProfiles() {
         try {
-            console.log('Prefetching user profiles...');
-            const profiles = await this.getFormattedUserProfiles();
+            console.log('Prefetching user profiles and settings...');
+            
+            // Prefetch both profiles and settings
+            const [profiles, userConfig] = await Promise.all([
+                this.getFormattedUserProfiles(),
+                this.getUserConfig()
+            ]);
+            
             this.profileCache = profiles;
+            this.settingsCache = userConfig;
             this.cacheExpiry = Date.now() + this.cacheTTL;
             this.isInitialized = true;
+            
+            // Save to chrome storage
+            await this.saveCacheToStorage();
+            
             console.log('Profiles prefetched and cached:', profiles.length, 'profiles');
+            console.log('Settings prefetched and cached:', userConfig ? 'Yes' : 'No');
         } catch (error) {
-            console.error('Error prefetching profiles:', error);
+            console.error('Error prefetching profiles and settings:', error);
             this.isInitialized = false;
         }
     }
@@ -285,18 +406,51 @@ class UserProfileService {
     }
 
     /**
-     * Refresh profiles in background (non-blocking)
+     * Refresh profiles and settings in background (non-blocking)
      * @returns {Promise<void>}
      */
     async refreshInBackground() {
         try {
-            console.log('Refreshing profiles in background...');
-            const profiles = await this.getFormattedUserProfiles();
+            console.log('Refreshing profiles and settings in background...');
+            
+            // Refresh both profiles and settings
+            const [profiles, userConfig] = await Promise.all([
+                this.getFormattedUserProfiles(),
+                this.getUserConfig()
+            ]);
+            
             this.profileCache = profiles;
+            this.settingsCache = userConfig;
             this.cacheExpiry = Date.now() + this.cacheTTL;
+            
+            // Save to chrome storage
+            await this.saveCacheToStorage();
+            
             console.log('Background refresh completed:', profiles.length, 'profiles');
+            console.log('Settings refreshed:', userConfig ? 'Yes' : 'No');
         } catch (error) {
             console.error('Error in background refresh:', error);
+        }
+    }
+
+    /**
+     * Get cached settings or fetch if cache is stale
+     * @returns {Promise<Object|null>} User settings or null if not available
+     */
+    async getCachedSettings() {
+        try {
+            if (this.settingsCache && this.cacheExpiry && Date.now() < this.cacheExpiry) {
+                console.log('Returning cached settings');
+                return this.settingsCache;
+            }
+            
+            console.log('Cache stale or empty, fetching fresh settings...');
+            const userConfig = await this.getUserConfig();
+            return userConfig;
+        } catch (error) {
+            console.error('Error fetching cached settings:', error);
+            // Return stale cache if available, otherwise null
+            return this.settingsCache || null;
         }
     }
 

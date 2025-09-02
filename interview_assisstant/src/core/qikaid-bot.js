@@ -1,8 +1,8 @@
+import { backendUrlApiQikAidBot } from "./environment";
 // Qikaid Bot Service - Handles interview payload generation using user profile data
-import userProfileService from './user-profile-service.js';
 
 // Qikaid Backend API Service - Handles all GPT interactions through backend
-const QIKAID_API_BASE_URL = "http://localhost:8083/api/v1/openai";
+const QIKAID_API_BASE_URL = backendUrlApiQikAidBot;
 
 
 
@@ -30,6 +30,43 @@ async function getAuthToken() {
   }
 }
 
+/**
+ * Get user settings from cache for hyperparameters
+ * @returns {Promise<Object|null>} User settings object or null if not available
+ */
+async function getUserSettings() {
+  try {
+    const result = await chrome.storage.local.get(['userProfileCache']);
+    if (result.userProfileCache && result.userProfileCache.settingsCache) {
+      const settings = result.userProfileCache.settingsCache.settings;
+      console.log('Retrieved user settings:', settings);
+      return settings;
+    }
+    console.log('No user settings found in cache');
+    return null;
+  } catch (error) {
+    console.warn('Could not load user settings for hyperparameters:', error);
+    return null;
+  }
+}
+
+/**
+ * Get hyperparameters with fallback defaults
+ * @returns {Promise<Object>} Hyperparameters object
+ */
+async function getHyperparameters() {
+  const userSettings = await getUserSettings();
+  
+  return {
+    temperature: userSettings?.defaultTemperature ?? 0.1,
+    maxTokens: userSettings?.defaultMaxTokens ?? 200,
+    topP: userSettings?.defaultTopP ?? 0.9,
+    topK: userSettings?.defaultTopK ?? 50,
+    frequencyPenalty: userSettings?.frequencyPenalty ?? 0.1,
+    presencePenalty: userSettings?.presencePenalty ?? 0.1
+  };
+}
+
 // ============================================================================
 // PROMPT GENERATION FUNCTIONS USING USER PROFILE DATA
 // ============================================================================
@@ -40,20 +77,28 @@ async function getAuthToken() {
  */
 export async function generateInterviewPayload() {
   try {
-    // Get the selected profile from chrome storage
+    // Get the selected profile from chrome storage cache
     const result = await new Promise((resolve) => {
-      chrome.storage.local.get(['selectedUserProfileId'], resolve);
+      chrome.storage.local.get(['userProfileCache', 'selectedUserProfileId'], resolve);
     });
     
-    const selectedProfileId = result.selectedUserProfileId;
+    const cacheData = result.userProfileCache;
+    const selectedProfileId = result.selectedUserProfileId || (cacheData ? cacheData.selectedUserProfileId : null);
+    console.log('Selected profile ID from cache:', selectedProfileId);
     
     if (!selectedProfileId) {
       console.log('No profile selected, using default payload');
       return getDefaultPayload();
     }
     
-    // Get the selected profile data
-    const profile = await userProfileService.getUserProfile(selectedProfileId);
+    // Get the selected profile data from cache
+    if (!cacheData || !cacheData.profileCache) {
+      console.log('No profile cache found, using default payload');
+      return getDefaultPayload();
+    }
+    
+    // Find the selected profile
+    const profile = cacheData.profileCache.find(p => p.userProfileId === selectedProfileId);
     
     if (!profile) {
       console.log('Selected profile not found, using default payload');
@@ -61,6 +106,11 @@ export async function generateInterviewPayload() {
     }
     
     console.log('Generating payload using profile:', profile.displayName);
+    console.log('Profile data:', {
+      userInfo: profile.userInfo,
+      purpose: profile.purpose,
+      botRole: profile.botRole
+    });
     
     // Generate payload using profile data
     return [
@@ -86,20 +136,28 @@ export async function generateInterviewPayload() {
  */
 export async function generateInterviewPayloadForScreenshotMode() {
   try {
-    // Get the selected profile from chrome storage
+    // Get the selected profile from chrome storage cache
     const result = await new Promise((resolve) => {
-      chrome.storage.local.get(['selectedUserProfileId'], resolve);
+      chrome.storage.local.get(['userProfileCache', 'selectedUserProfileId'], resolve);
     });
     
-    const selectedProfileId = result.selectedUserProfileId;
+    const cacheData = result.userProfileCache;
+    const selectedProfileId = result.selectedUserProfileId || (cacheData ? cacheData.selectedUserProfileId : null);
+    console.log('Selected profile ID from cache (screenshot):', selectedProfileId);
     
     if (!selectedProfileId) {
       console.log('No profile selected for screenshot mode, using default payload');
       return getDefaultScreenshotPayload();
     }
     
-    // Get the selected profile data
-    const profile = await userProfileService.getUserProfile(selectedProfileId);
+    // Get the selected profile data from cache
+    if (!cacheData || !cacheData.profileCache) {
+      console.log('No profile cache found for screenshot mode, using default payload');
+      return getDefaultScreenshotPayload();
+    }
+    
+    // Find the selected profile
+    const profile = cacheData.profileCache.find(p => p.userProfileId === selectedProfileId);
     
     if (!profile) {
       console.log('Selected profile not found for screenshot mode, using default payload');
@@ -107,6 +165,11 @@ export async function generateInterviewPayloadForScreenshotMode() {
     }
     
     console.log('Generating screenshot payload using profile:', profile.displayName);
+    console.log('Profile data (screenshot):', {
+      userInfo: profile.userInfo,
+      purpose: profile.purpose,
+      botRole: profile.botRole
+    });
     
     // Generate payload using profile data
     return [
@@ -172,14 +235,25 @@ export async function fetchGPTResponse(question, messages) {
       throw new Error("No authentication token found");
     }
 
+    // Get hyperparameters from user settings
+    const hyperparams = await getHyperparameters();
+    console.log('Using hyperparameters:', hyperparams);
+
     // Add user question to messages
     const updatedMessages = [...messages, { role: "user", content: question }];
     
-    // Prepare API payload for backend
+    // Prepare API payload for backend with user settings
     const payload = {
       messages: updatedMessages,
-      question: question
+      question: question,
+      ...hyperparams
     };
+
+    console.log('API payload:', {
+      messages: updatedMessages.length,
+      question: question.substring(0, 100) + '...',
+      hyperparameters: hyperparams
+    });
 
     // Make API call to backend
     const response = await fetch(`${QIKAID_API_BASE_URL}/ask`, {
@@ -213,17 +287,27 @@ export async function sendImageToGPT(imageDataUrl, messagesScreenshotMode) {
       throw new Error("No authentication token found");
     }
 
+    // Get hyperparameters from user settings
+    const hyperparams = await getHyperparameters();
+    console.log('Using hyperparameters for image analysis:', hyperparams);
+
     const base64 = imageDataUrl.split(",")[1];
     let imageDataUrlBase64 = `data:image/png;base64,${base64}`;
 
-    // Prepare API payload for backend
+    // Prepare API payload for backend with user settings
     const payload = {
       messages: messagesScreenshotMode,
       imageDataUrl: imageDataUrlBase64, // Send the full data URL (data:image/png;base64,...)
       screenshotMode: true,
-      maxTokens: 8000,
-
+      ...hyperparams
     };
+
+    console.log('Image API payload:', {
+      messages: messagesScreenshotMode.length,
+      imageDataUrl: 'data:image/png;base64,[...]',
+      screenshotMode: true,
+      hyperparameters: hyperparams
+    });
 
     // Make API call to backend
     const response = await fetch(`${QIKAID_API_BASE_URL}/vision`, {

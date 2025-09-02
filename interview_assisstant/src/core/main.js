@@ -1,24 +1,24 @@
 // Feature flag to switch between qikaid-bot and open-ai
-const FLAG_QIKAID_BOT_ENABLED = false;
+const FLAG_QIKAID_BOT_ENABLED = true;
 
 // Import both modules
 import * as openAi from './open-ai.js';
 import * as qikaidBot from './qikaid-bot.js';
 
 // Wrapper functions to handle different parameter signatures
-const fetchGPTResponse = async (question, messages, apiKey, aiModel) => {
+const fetchGPTResponse = async (question, messages, apiKey) => {
   if (FLAG_QIKAID_BOT_ENABLED) {
     return await qikaidBot.fetchGPTResponse(question, messages);
   } else {
-    return await openAi.fetchGPTResponse(question, messages, apiKey, aiModel);
+    return await openAi.fetchGPTResponse(question, messages, apiKey, "gpt-4o-mini");
   }
 };
 
-const sendImageToGPT = async (imageDataUrl, messages, apiKey, aiModel) => {
+const sendImageToGPT = async (imageDataUrl, messages, apiKey) => {
   if (FLAG_QIKAID_BOT_ENABLED) {
     return await qikaidBot.sendImageToGPT(imageDataUrl, messages);
   } else {
-    return await openAi.sendImageToGPT(imageDataUrl, messages, apiKey, aiModel);
+    return await openAi.sendImageToGPT(imageDataUrl, messages, apiKey, "gpt-4o");
   }
 };
 
@@ -55,7 +55,7 @@ let apiKey = getApiKey();
 
 const transcriptLog = new Set();
 
-let aiModel = getOpenAiModel();
+
 let jobRole = getJobRole();
 let jobSpecialy = getJobSpecialy();
 let extraInterviewPrompt = getExtraInterviewPrompt();
@@ -402,16 +402,15 @@ document.addEventListener("contextmenu", (e) => {
   const onOptionClick = async (prefix, label) => {
     const prompt = prefix + selection;
     appendToOverlay(`➡️ You: ${prompt}`, false); // User input goes to right panel
-    appendToOverlay("AI Response: ...thinking", true); // GPT thinking goes to left panel
+    appendToOverlay("...thinking", true); // GPT thinking goes to left panel
     const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await fetchGPTResponse(
       prompt, 
       messages,
-      apiKey,
-      aiModel
+      apiKey
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "AI Response: ...thinking") el.remove();
+      if (el.textContent === "...thinking") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
     menu.remove();
@@ -449,16 +448,15 @@ screenshotBtn.onclick = async () => {
     appendImageToOverlay(dataUrl);
 
     // Send to GPT
-    appendToOverlay("🧠 GPT: ...analyzing image", true); // GPT thinking goes to left panel
+    appendToOverlay("...analyzing image", true); // GPT thinking goes to left panel
     const messages = await generateInterviewPayloadForScreenshotMode(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await sendImageToGPT(
       dataUrl, 
       messages,
-      apiKey,
-      aiModel
+      apiKey
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "🧠 GPT: ...analyzing image") el.remove();
+      if (el.textContent === "...analyzing image") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
   } catch (err) {
@@ -470,12 +468,10 @@ screenshotBtn.onclick = async () => {
 const configBtn = createConfigBtn();
 header.appendChild(configBtn);
 
-const {
+  const {
    configModal, apiKeyInput, 
-   saveConfigBtn,
-   openaiModelInput, jobRoleInput, 
-   specificInterviewInput, extraInteviewPromptInput, websocketUrlInput
-  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, getWebSocketBackendUrl(), userProfileService);
+   saveConfigBtn
+  } = createConfigModal(apiKey, userProfileService);
 document.body.appendChild(configModal);
 
 configBtn.onclick = () => {
@@ -495,8 +491,13 @@ configBtn.onclick = () => {
       
       // Optionally refresh in background if cache is stale
       userProfileService.refreshInBackground();
+    }
+    
+    if (configModal.loadUserSettings) {
+      console.log("Calling loadUserSettings...");
+      configModal.loadUserSettings();
     } else {
-      console.error("loadUserProfiles function not found on configModal");
+      console.error("loadUserSettings function not found on configModal");
     }
     configModal.style.display = "block";
   } else {
@@ -508,20 +509,14 @@ configBtn.onclick = () => {
 function refreshConfigValues() {
   // Reload values from localStorage
   apiKey = getApiKey();
-  aiModel = getOpenAiModel();
   jobRole = getJobRole();
   jobSpecialy = getJobSpecialy();
   extraInterviewPrompt = getExtraInterviewPrompt();
   
   // Update input fields with current values
   apiKeyInput.value = apiKey;
-  openaiModelInput.value = aiModel;
-  jobRoleInput.value = jobRole;
-  specificInterviewInput.value = jobSpecialy;
-  extraInteviewPromptInput.value = extraInterviewPrompt;
-  websocketUrlInput.value = getWebSocketBackendUrl();
   
-  console.log("Config refreshed:", { apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt });
+  console.log("Config refreshed:", { apiKey, jobRole, jobSpecialy, extraInterviewPrompt });
 }
 
 
@@ -545,8 +540,10 @@ function setupWebSocketClassification() {
 async function initializeUserProfiles() {
   try {
     console.log('Initializing user profiles on startup...');
-    await userProfileService.prefetchProfiles();
-    console.log('User profiles initialized successfully');
+    
+    // The userProfileService automatically loads cache when created
+    // and prefetches in background if needed
+    console.log('User profiles auto-initialization completed');
   } catch (error) {
     console.error('Error initializing user profiles:', error);
   }
@@ -763,6 +760,9 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
     statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
   }
   
+  // Auto Enable Teams Live Captions for Transcribing
+  setupTeamsLiveCaptions();
+  
   // Automatically show/hide plugin UI based on meeting status (if feature flag enabled)
   if (AUTO_UI_MANAGEMENT_ENABLED) {
     if (isInMeeting) {
@@ -770,7 +770,7 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
       overlay.style.display = "block";
       
       // Automatically setup live captions for the meeting
-      setupTeamsLiveCaptions();
+      // setupTeamsLiveCaptions();
     } else {
       // Meeting ended - hide plugin UI completely
       overlay.style.display = "none";
@@ -790,48 +790,16 @@ saveConfigBtn.onclick = () => {
       localStorage.setItem("openaiApiKey", key);
     }
 
-    // Save AI model
-    const newAiModel = openaiModelInput.value.trim();
-    if (newAiModel) {
-      aiModel = newAiModel; // Update global variable
-      localStorage.setItem("openaiModel", newAiModel);
-    }
 
-    // Save job role
-    const newJobRole = jobRoleInput.value.trim();
-    if (newJobRole) {
-      jobRole = newJobRole; // Update global variable
-      localStorage.setItem("jobRole", newJobRole);
-    }
 
-    // Save job specialty
-    const newJobSpecialy = specificInterviewInput.value.trim();
-    if (newJobSpecialy) {
-      jobSpecialy = newJobSpecialy; // Update global variable
-      localStorage.setItem("jobSpecialy", newJobSpecialy);
-    }
 
-    // Save extra interview prompt
-    const newExtraInterviewPrompt = extraInteviewPromptInput.value.trim();
-    if (newExtraInterviewPrompt) {
-      extraInterviewPrompt = newExtraInterviewPrompt; // Update global variable
-      localStorage.setItem("extraInterviewPrompt", newExtraInterviewPrompt);
-    }
-
-    // Save WebSocket backend URL
-    const newWebSocketUrl = websocketUrlInput.value.trim();
-    if (newWebSocketUrl) {
-      saveWebSocketBackendUrl(newWebSocketUrl);
-      // Update WebSocket service with new URL
-      webSocketService.updateBackendUrl(newWebSocketUrl);
-    }
 
     // Close config modal after saving
     isConfigOpen = false;
     configModal.style.display = "none";
 
     
-    appendToOverlay("Config saved and applied! Model: " + aiModel);
+    appendToOverlay("Config saved and applied!");
   } catch (e) {
     appendToOverlay("Error saving config: " + e.message);
     console.error(e);
@@ -840,15 +808,15 @@ saveConfigBtn.onclick = () => {
 
 // === Ask Button Logic ===
 async function submitCustomPrompt() {
-  const value = "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: " + input.value.trim();
+  const value =  input.value.trim();
   if (!value) return;
   appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
-  appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
+  appendToOverlay("...thinking", true); // GPT thinking goes to left panel
   input.value = "";
   const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
-  fetchGPTResponse(value, messages, apiKey, aiModel).then(reply => {
+  fetchGPTResponse(value, messages, apiKey).then(reply => {
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "🧠 GPT: ...thinking") el.remove();
+      if (el.textContent === "...thinking") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
   });

@@ -260,7 +260,7 @@ export function createConfigBtn() {
 }
 
 //  CONFIGURATION MODAL (MODEL - DIALOG)
-export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, websocketBackendUrl, userProfileService) {
+export function createConfigModal(apiKey, userProfileService) {
   const configModal = document.createElement("div");
   configModal.style.cssText = `
     display: none;
@@ -349,97 +349,15 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     box-sizing: border-box;
   `;
 
-  const modelLabel = document.createElement("label");
-  modelLabel.textContent = "AI Model:";
-  modelLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const openaiModelInput = document.createElement("select");
-  openaiModelInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
-  
-  // Add model options
-  const models = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5o", "gpt-5o-mini"];
-  models.forEach(model => {
-    const option = document.createElement("option");
-    option.value = model;
-    option.textContent = model;
-    openaiModelInput.appendChild(option);
-  });
 
-  const jobRoleLabel = document.createElement("label");
-  jobRoleLabel.textContent = "Job Role:";
-  jobRoleLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const jobRoleInput = document.createElement("input");
-  jobRoleInput.type = "text";
-  jobRoleInput.placeholder = "Job Role";
-  jobRoleInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const specificInterviewLabel = document.createElement("label");
-  specificInterviewLabel.textContent = "Job Specialty Interview Prompt:";
-  specificInterviewLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const specificInterviewInput = document.createElement("input");
-  specificInterviewInput.type = "text";
-  specificInterviewInput.placeholder = "Specific Interview";
-  specificInterviewInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;  
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const extraInteviewPromptLabel = document.createElement("label");
-  extraInteviewPromptLabel.textContent = "Extra Interview Prompt:";
-  extraInteviewPromptLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const extraInteviewPromptInput = document.createElement("input");
-  extraInteviewPromptInput.type = "text";
-  extraInteviewPromptInput.placeholder = "Extra Interview Prompt";
-  extraInteviewPromptInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;    
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const websocketUrlLabel = document.createElement("label");
-  websocketUrlLabel.textContent = "WebSocket Backend URL:";
-  websocketUrlLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const websocketUrlInput = document.createElement("input");
-  websocketUrlInput.type = "text";
-  websocketUrlInput.placeholder = "ws://localhost:8080/ws/transcript";
-  websocketUrlInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;    
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
   const closeButton = document.createElement("span");
   closeButton.innerHTML = "&times;";
@@ -517,26 +435,107 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
 
 
 
-  // Set the selected model
-  openaiModelInput.value = aiModel;
-  configModal.appendChild(modelLabel);
-  configModal.appendChild(openaiModelInput);
 
-  jobRoleInput.value = jobRole;
-  configModal.appendChild(jobRoleLabel);
-  configModal.appendChild(jobRoleInput);
 
-  specificInterviewInput.value = jobSpecialy;
-  configModal.appendChild(specificInterviewLabel);
-  configModal.appendChild(specificInterviewInput);
 
-  extraInteviewPromptInput.value = extraInterviewPrompt;
-  configModal.appendChild(extraInteviewPromptLabel);
-  configModal.appendChild(extraInteviewPromptInput);
 
-  websocketUrlInput.value = websocketBackendUrl || "ws://localhost:8080/ws/transcript";
-  configModal.appendChild(websocketUrlLabel);
-  configModal.appendChild(websocketUrlInput);
+  // User Settings Section
+  const settingsSection = document.createElement("div");
+  settingsSection.style.cssText = `
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  `;
+
+  const settingsDisclaimer = document.createElement("div");
+  settingsDisclaimer.textContent = "⚠️ Prompt setting must be edit from app.qikaid.com";
+  settingsDisclaimer.style.cssText = `
+    display: block; 
+    font-size: 11px; 
+    color: #dc3545; 
+    background: #f8d7da; 
+    border: 1px solid #f5c6cb; 
+    border-radius: 4px; 
+    padding: 6px 8px; 
+    margin-bottom: 8px;
+    font-weight: 500;
+  `;
+
+  const settingsTitle = document.createElement("div");
+  settingsTitle.textContent = "Prompt Setting";
+  settingsTitle.style.cssText = `
+    display: block; 
+    font-weight: bold; 
+    font-size: 14px; 
+    color: #333; 
+    margin-bottom: 8px; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #ddd;
+  `;
+
+  const settingsLabel = document.createElement("label");
+  settingsLabel.textContent = "User Settings:";
+  settingsLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 8px;`;
+
+  const settingsDetails = document.createElement("div");
+  settingsDetails.style.cssText = `
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+  `;
+
+  const loadUserSettings = async () => {
+    try {
+      const userConfig = await userProfileService.getCachedSettings();
+      if (userConfig && userConfig.settings) {
+        const settings = userConfig.settings;
+        settingsDetails.innerHTML = `
+          <div style="margin-bottom: 8px;">
+            <label for="default-temperature-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Temperature:</label>
+            <input id="default-temperature-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTemperature || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-max-tokens-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Max Tokens:</label>
+            <input id="default-max-tokens-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultMaxTokens || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-top-p-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Top P:</label>
+            <input id="default-top-p-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTopP || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-top-k-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Top K:</label>
+            <input id="default-top-k-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTopK || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="presence-penalty-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Presence Penalty:</label>
+            <input id="presence-penalty-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.presencePenalty || 'Not set'}">
+          </div>
+  
+        `;
+      } else {
+        settingsDetails.innerHTML = `
+          <div style="text-align: center; color: #666; font-size: 12px; padding: 20px;">
+            No user settings found
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading user settings:', error);
+      settingsDetails.innerHTML = `
+        <div style="text-align: center; color: #dc3545; font-size: 12px; padding: 20px;">
+          Error loading user settings
+        </div>
+      `;
+    }
+  };
+
+  settingsSection.appendChild(settingsDisclaimer);
+  settingsSection.appendChild(settingsTitle);
+  settingsSection.appendChild(settingsLabel);
+  settingsSection.appendChild(settingsDetails);
+  configModal.appendChild(settingsSection);
 
   // User Profile Section
   const profileSection = document.createElement("div");
@@ -544,6 +543,18 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #eee;
+  `;
+
+  const profileTitle = document.createElement("div");
+  profileTitle.textContent = "Prompt Profile";
+  profileTitle.style.cssText = `
+    display: block; 
+    font-weight: bold; 
+    font-size: 14px; 
+    color: #333; 
+    margin-bottom: 8px; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #ddd;
   `;
 
   const profileLabel = document.createElement("label");
@@ -752,6 +763,7 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     }
   });
 
+  profileSection.appendChild(profileTitle);
   profileSection.appendChild(profileLabel);
   profileSection.appendChild(profileContainer);
   profileSection.appendChild(profileDetails);
@@ -762,12 +774,10 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   configModal.appendChild(profileSection);
   configModal.appendChild(saveConfigBtn);
 
-  // Store loadUserProfiles function for external access
+  // Store functions for external access
   configModal.loadUserProfiles = loadUserProfiles;
-  return {configModal, apiKeyInput,
-    saveConfigBtn,  openaiModelInput, 
-    jobRoleInput, specificInterviewInput,
-     extraInteviewPromptInput, websocketUrlInput} 
+  configModal.loadUserSettings = loadUserSettings;
+  return {configModal, apiKeyInput, saveConfigBtn} 
 }
 
 export function createDualContentLayout() {
@@ -973,18 +983,18 @@ export function createGPTContextMenu(e, options, onOptionClick) {
 
 export const CONTEXT_MENU_OPTIONS = [
   { label: "💬 Ask GPT about this", prefix: "" },
-  {
-    label: "📘 Explain briefly (interview-friendly)",
-    prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
-  },
-  {
-    label: "🛠️ Real-world use case (interview-friendly)",
-    prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
-  },
-  {
-    label: "🧩 Explain + Use Case (interview-friendly)",
-    prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
-  },
+  // {
+  //   label: "📘 Explain briefly (interview-friendly)",
+  //   prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
+  // },
+  // {
+  //   label: "🛠️ Real-world use case (interview-friendly)",
+  //   prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
+  // },
+  // {
+  //   label: "🧩 Explain + Use Case (interview-friendly)",
+  //   prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
+  // },
 ];
 
 export function createLockModal() {
