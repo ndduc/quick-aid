@@ -430,8 +430,8 @@ export function createConfigModal(apiKey, userProfileService) {
   apiKeyInput.value = apiKey;
   configModal.appendChild(closeButton);
 
-  configModal.appendChild(apiKeyLabel);
-  configModal.appendChild(apiKeyInput);
+  // configModal.appendChild(apiKeyLabel);
+  // configModal.appendChild(apiKeyInput);
 
 
 

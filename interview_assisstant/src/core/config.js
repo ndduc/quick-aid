@@ -9,33 +9,38 @@ export const AVAILABLE_MODELS = [
 
 
 export function getApiKey() {
-  return localStorage.getItem("openaiApiKey") || empty_key;
+  return "";
 }
 
 export function saveApiKey(key) {
-  localStorage.setItem("openaiApiKey", key);
+  console.log("Deprecated function saveApiKey called");
 }
 
 export function getOpenAiModel() {
-  return localStorage.getItem("openaiModel") || "gpt-4o"; 
+  // return localStorage.getItem("openaiModel") || "gpt-4o"; 
+  return "";
 }
 
 export function getJobRole() {
-  return localStorage.getItem("jobRole") || "";
+  return "";
+  // return localStorage.getItem("jobRole") || "";
 }
 
 export function getJobSpecialy() {
-  return localStorage.getItem("jobSpecialy") || "";
+  // return localStorage.getItem("jobSpecialy") || "";
+  return "";
 }
 
 export function getExtraInterviewPrompt() {
-  return localStorage.getItem("extraInterviewPrompt") || "";
+  // return localStorage.getItem("extraInterviewPrompt") || "";
+  return "";
 }
 
 export function getWebSocketBackendUrl() {
-  return localStorage.getItem("websocketBackendUrl") || "ws://localhost:8080/ws/transcript";
+  // return localStorage.getItem("websocketBackendUrl") || "ws://localhost:8080/ws/transcript";
+  return "";
 }
 
 export function saveWebSocketBackendUrl(url) {
-  localStorage.setItem("websocketBackendUrl", url);
+  console.log("Deprecated function saveWebSocketBackendUrl called");
 }
