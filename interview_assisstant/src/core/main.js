@@ -1,3 +1,18 @@
+
+import {
+  getApiKey, getJobRole, 
+  getJobSpecialy, getExtraInterviewPrompt, 
+  getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
+import {checkTranscript} from './transcribing-logic.js'
+import {webSocketService} from './websocket-service.js'
+import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-ms-team.js'
+import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
+import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
+  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
+import userProfileService from './user-profile-service.js'
+import {extractMeetingTitle} from './ms-find-title-info.js'
+
+
 // Feature flag to switch between qikaid-bot and open-ai
 const FLAG_QIKAID_BOT_ENABLED = true;
 
@@ -37,19 +52,6 @@ const generateInterviewPayloadForScreenshotMode = async (jobRole, specialty, ext
     return openAi.generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt);
   }
 };
-
-import {
-  getApiKey, getJobRole, 
-  getJobSpecialy, getExtraInterviewPrompt, 
-  getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
-import {checkTranscript} from './transcribing-logic.js'
-import {webSocketService} from './websocket-service.js'
-import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-ms-team.js'
-import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
-import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
-  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
-import userProfileService from './user-profile-service.js'
-
 
 let apiKey = getApiKey();
 
@@ -762,6 +764,7 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
   
   // Auto Enable Teams Live Captions for Transcribing
   setupTeamsLiveCaptions();
+  extractMeetingTitle();
   
   // Automatically show/hide plugin UI based on meeting status (if feature flag enabled)
   if (AUTO_UI_MANAGEMENT_ENABLED) {

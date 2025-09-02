@@ -26,7 +26,6 @@ class WebSocketService {
   }
 
   async init() {
-    console.log('INIT GET ACCESS TOKEN');
     // get token (wait if not available yet)
     this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
     this.cognitoId = await getCognitoId() || await waitForCognitoId(10000);
@@ -143,6 +142,7 @@ class WebSocketService {
   startMeetingSession() {
     this.isInMeeting = true;
     this.currentSessionId = `meeting_${Date.now()}`;
+    console.log('Meeting started: ', this.currentSessionId);
         
     // Ensure WebSocket is connected
     if (!this.isConnected) {
