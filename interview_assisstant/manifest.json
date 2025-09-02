@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "QuickAid",
   "version": "1.0",
-  "description": "Read transcript from 3rd party plugin like Tactiq, allow user to send to GPT, show overlay response",
+  "description": "Transcribes caption from MS Teams",
   "permissions": ["storage", "scripting"],
   "background": { "service_worker": "background/background.js" },
   "host_permissions": [
@@ -11,7 +11,7 @@
       "http://localhost:3000/*"],
   "content_scripts": [
     {
-      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*", "https://teams.microsoft.com/*"],
+      "matches": ["https://teams.live.com/v2/*", "https://teams.microsoft.com/*"],
       "js": ["core/main.js"],
       "type": "module"
     },
@@ -25,7 +25,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://meet.google.com/*", "https://teams.live.com/v2/*", "https://teams.microsoft.com/*", "http://localhost:3000/*", "https://app.qikaid.com/*"],
+      "matches": ["https://teams.live.com/v2/*", "https://teams.microsoft.com/*", "http://localhost:3000/*", "https://app.qikaid.com/*"],
       "js": ["cs/cs_validator.js"],
       "run_at": "document_idle"
     }
