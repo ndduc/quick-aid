@@ -1,13 +1,14 @@
 const KEYS = [
     "access_token",
     // "id_token",
-    // "refresh_token",
+    "refresh_token",
     // "expires_in",
     "token_type",
     "token_timestamp",
     "user_identifier",
     // "theme",
-    "cognitoId"
+    "cognitoId",
+    "userId"
   ];
   
   function sendTokens() {

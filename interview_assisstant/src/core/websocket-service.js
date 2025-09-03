@@ -4,6 +4,9 @@ import { getAccessToken, getCognitoId,
    getUserIdentifier, waitForAccessToken,
     waitForCognitoId, waitForUserIdentifier } from './token-store.js';
 
+import { backendUrlComprehendWebSocket } from './environment.js';
+import { getCurrentMeetingId, getCurrentMeetingTitle, getMeetingStatus } from './ms-meeting-monitor.js';
+
 class WebSocketService {
   constructor() {
     this.socket = null;
@@ -12,7 +15,7 @@ class WebSocketService {
     this.maxReconnectAttempts = 1000;
     this.reconnectDelay = 1000; // 1 second
     // this.backendUrl = 'wss://api.qikaid.com/comprehend/ws/transcript?access_token=';
-    this.backendUrl = 'wss://5c00f7077846.ngrok-free.app/comprehend/ws/transcript?access_token=';
+    this.backendUrl = backendUrlComprehendWebSocket;
     this.messageQueue = [];
     this.onClassificationReceived = null;
     
@@ -24,30 +27,93 @@ class WebSocketService {
   }
 
   async init() {
-    console.log('INIT GET ACCESS TOKEN');
     // get token (wait if not available yet)
     this.accessToken = await getAccessToken() || await waitForAccessToken(10000);
     this.cognitoId = await getCognitoId() || await waitForCognitoId(10000);
     this.userIdentifier = await getUserIdentifier() || await waitForUserIdentifier(10000);
-    this.backendUrl = this.backendUrl 
-      + this.accessToken 
-      + "&cognitoId=" + this.cognitoId 
-      + "&userIdentifier=" + this.userIdentifier;
-    this.connect();
+    
+    // Check if token needs refresh before connecting
+    await this.checkAndRefreshToken();
+    
+    this.updateBackendUrlWithToken();
+    
+    // Don't connect automatically - wait for meeting to start
+    // console.log('WebSocket service initialized - waiting for meeting to start');
 
     // Start meeting detection
     this.startMeetingDetection();
 
-    // if token rotates, reconnect with the new one
-    // onTokenChange(t => {
-    //   const next = t?.access_token;
-    //   if (next && next !== this.accessToken) {
-    //     this.accessToken = next;
-    //     this.#reconnect('token-rotated');
-    //   }
-    // });
+    // Set up token refresh monitoring
+    this.setupTokenRefreshMonitoring();
 
     // return this; // so you can: const svc = await new WebSocketService().init()
+  }
+
+  // Check if token needs refresh and refresh if necessary
+  async checkAndRefreshToken() {
+    try {
+      const { QIKAID_PLUGIN_QA_TOKENS } = await chrome.storage.local.get("QIKAID_PLUGIN_QA_TOKENS");
+      if (!QIKAID_PLUGIN_QA_TOKENS?.token_timestamp) {
+        console.log("[WebSocket] No token timestamp available");
+        return;
+      }
+
+      const tokenTime = parseInt(QIKAID_PLUGIN_QA_TOKENS.token_timestamp);
+      const currentTime = Date.now();
+      const eightHoursInMs = 8 * 60 * 60 * 1000;
+      
+      // Check if token will expire within 8 hours (assuming 24h token lifetime)
+      const isExpiringSoon = (currentTime - tokenTime) >= (24 * 60 * 60 * 1000 - eightHoursInMs);
+      
+      if (isExpiringSoon) {
+        console.log("[WebSocket] Token expiring soon, requesting refresh from background script");
+        // Request token refresh from background script
+        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN_REQUEST" });
+        
+        // Wait a bit for refresh to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Get updated token
+        this.accessToken = await getAccessToken();
+      }
+    } catch (error) {
+      console.error("[WebSocket] Error checking token refresh:", error);
+    }
+  }
+
+  // Update backend URL with current token
+  updateBackendUrlWithToken() {
+    const currentSessionId = getCurrentMeetingId();
+    const currentMeetingTitle = getCurrentMeetingTitle();
+    
+    this.backendUrl = backendUrlComprehendWebSocket
+      + this.accessToken 
+      + "&cognitoId=" + this.cognitoId 
+      + "&userIdentifier=" + this.userIdentifier
+      + (currentSessionId ? "&meetingSessionId=" + currentSessionId : "&meetingSessionId=NONE")
+      + (currentMeetingTitle ? "&meetingTitle=" + encodeURIComponent(currentMeetingTitle) : "&meetingTitle=NONE");
+    
+    // console.log('Updated WebSocket URL with session ID:', currentSessionId);
+    // console.log('Updated WebSocket URL with meeting title:', currentMeetingTitle);
+    // console.log('Full URL:', this.backendUrl.substring(0, 150) + '...');
+  }
+
+  // Set up token refresh monitoring
+  setupTokenRefreshMonitoring() {
+    // Listen for token refresh notifications from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === "TOKEN_REFRESHED") {
+        console.log("[WebSocket] Token refreshed, updating connection");
+        this.accessToken = message.newAccessToken;
+        this.updateBackendUrlWithToken();
+        
+        // Reconnect with new token only if in meeting
+        if (this.isConnected) {
+          this.disconnect();
+          setTimeout(() => this.connect(), 1000);
+        }
+      }
+    });
   }
 
   // Start meeting detection service
@@ -87,18 +153,28 @@ class WebSocketService {
   // Start meeting session
   startMeetingSession() {
     this.isInMeeting = true;
-    this.currentSessionId = `meeting_${Date.now()}`;
+    
+    // Get session ID from meeting monitor
+    this.currentSessionId = getCurrentMeetingId();
+    console.log('Meeting started: ', this.currentSessionId);
+    
+    // Update WebSocket URL with session ID
+    this.updateBackendUrlWithToken();
         
-    // Ensure WebSocket is connected
+    // Connect WebSocket (will only connect if in meeting)
     if (!this.isConnected) {
       this.connect();
     }
     
-    // Send session start message
-    this.sendSessionMessage('SESSION_START', {
-      sessionId: this.currentSessionId,
-      timestamp: new Date().toISOString()
-    });
+    // Send session start message after connection is established
+    setTimeout(() => {
+      if (this.isConnected) {
+        this.sendSessionMessage('SESSION_START', {
+          sessionId: this.currentSessionId,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }, 1000);
     
     // Notify status change
     if (this.onMeetingStatusChange) {
@@ -110,6 +186,8 @@ class WebSocketService {
   endMeetingSession() {
     if (!this.isInMeeting) return;
         
+    // console.log('Meeting ended: ', this.currentSessionId);
+    
     // Send custom meeting ended message
     this.sendCustomMessage('MEETING HAS ENDED');
     
@@ -175,12 +253,21 @@ class WebSocketService {
 
   // Send custom messages
   sendCustomMessage(text) {
+    // Get current session ID from meeting monitor
+    const currentSessionId = getCurrentMeetingId();
+    
+    // Safety check: Don't send if no active meeting
+    if (!currentSessionId) {
+      console.warn('No active meeting - skipping custom message send');
+      return;
+    }
+    
     const message = {
       type: 'CUSTOM_MESSAGE',
       text: text,
       timestamp: new Date().toISOString(),
       source: 'interview-assistant',
-      sessionId: this.currentSessionId
+      sessionId: currentSessionId
     };
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
@@ -192,12 +279,20 @@ class WebSocketService {
 
   // Initialize WebSocket connection
   connect() {
+    // Check if we're in a meeting before connecting
+    const currentSessionId = getCurrentMeetingId();
+    if (!currentSessionId) {
+      console.warn('No active meeting - skipping WebSocket connection');
+      return;
+    }
+
     try {
-      console.log(`Connecting to WebSocket backend: ${this.backendUrl}`);
+      // console.log(`Connecting to WebSocket backend with session ID: ${currentSessionId}`);
+      // console.log(`Full URL: ${this.backendUrl.substring(0, 150)}...`);
       this.socket = new WebSocket(this.backendUrl);
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected to backend');
+        // console.log('WebSocket connected to backend');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.processMessageQueue();
@@ -208,9 +303,9 @@ class WebSocketService {
       };
 
       this.socket.onclose = (event) => {
-        console.log('WebSocket connection closed:', event.code, event.reason);
+        // console.log('WebSocket connection closed:', event.code, event.reason);
         this.isConnected = false;
-        this.handleReconnection();
+        this.handleReconnectionWithSession();
       };
 
       this.socket.onerror = (error) => {
@@ -296,13 +391,22 @@ class WebSocketService {
 
   // Send transcript text
   sendTranscriptForClassification(transcriptId, text, timestamp) {
+    // Get current session ID from meeting monitor
+    const currentSessionId = getCurrentMeetingId();
+    
+    // Safety check: Don't send if no active meeting
+    if (!currentSessionId) {
+      console.warn('No active meeting - skipping transcript send');
+      return;
+    }
+    
     const message = {
       type: 'TRANSCRIPT_TEXT',
       transcriptId,
       text: text.trim(),
       timestamp,
       source: 'interview-assistant',
-      sessionId: this.currentSessionId
+      sessionId: currentSessionId
     };
 
     if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
@@ -321,6 +425,12 @@ class WebSocketService {
     console.log(`Processing ${this.messageQueue.length} queued messages...`);
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
+      
+      // Update session ID for queued messages with current meeting ID
+      if (message.sessionId !== undefined) {
+        message.sessionId = getCurrentMeetingId();
+      }
+      
       if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify(message));
         console.log(`Sent queued message: ${message.text?.substring(0, 50) || 'session message'}...`);
@@ -342,6 +452,28 @@ class WebSocketService {
     setTimeout(() => this.connect(), delay);
   }
 
+  // Handle reconnection with session ID
+  handleReconnectionWithSession() {
+    const currentSessionId = getCurrentMeetingId();
+    if (currentSessionId) {
+      console.log(`Reconnecting with session ID: ${currentSessionId}`);
+      this.handleReconnection();
+      // Send session start message after reconnection
+      setTimeout(() => {
+        if (this.isConnected) {
+          this.sendSessionMessage('SESSION_START', {
+            sessionId: currentSessionId,
+            timestamp: new Date().toISOString(),
+            reconnected: true
+          });
+        }
+      }, 1000);
+    } else {
+      console.warn('No active meeting - stopping reconnection attempts');
+      // Don't reconnect if no meeting is active
+    }
+  }
+
   disconnect() {
     if (this.socket) {
       this.socket.close(1000, 'User requested disconnect');
@@ -353,10 +485,13 @@ class WebSocketService {
 
   // Get meeting status
   getMeetingStatus() {
+    const meetingStatus = getMeetingStatus();
     return {
-      isInMeeting: this.isInMeeting,
-      sessionId: this.currentSessionId,
-      isConnected: this.isConnected
+      isInMeeting: meetingStatus.isInMeeting,
+      sessionId: meetingStatus.currentMeetingId,
+      meetingTitle: meetingStatus.currentMeetingTitle,
+      isConnected: this.isConnected,
+      isMonitoring: meetingStatus.isMonitoring
     };
   }
 
@@ -391,10 +526,11 @@ class WebSocketService {
       this.connect();
     }
   }
+
+
 }
 
 // Export singleton
 export const webSocketService = new WebSocketService();
-webSocketService.initialize();
 
 export { WebSocketService };

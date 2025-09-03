@@ -8,7 +8,7 @@ export function createOverlay() {
     height: 600px;
     resize: both;
     overflow: auto;
-    background: white;
+    background: rgba(255, 255, 255,0.7);
     color: black;
     font-size: 14px;
     padding: 0;
@@ -57,7 +57,7 @@ export function createLeftResizer() {
 export function createHeader() {
   const header = document.createElement("div");
   header.style.cssText = `
-    background: #f5f5f5;
+    background: rgba(245, 245, 245,0.7);
     padding: 6px 10px;
     font-weight: bold;
     font-size: 13px;
@@ -159,7 +159,7 @@ export function createInputSection(submitCustomPrompt) {
     display: flex;
     padding: 8px;
     border-top: 1px solid #ccc;
-    background: #fafafa;
+    background: rgba(250, 250, 250,0.7);
   `;
   
   const input = document.createElement("input");
@@ -214,19 +214,6 @@ export function createInputSection(submitCustomPrompt) {
     margin-left: 8px;
   `;
 
-  const msTeamsTestBtn = document.createElement("button");
-  msTeamsTestBtn.textContent = "🎯";
-  msTeamsTestBtn.title = "Test MS Teams Caption";
-  msTeamsTestBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #6f42c1;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
 
   const statusBtn = document.createElement("button");
   statusBtn.textContent = "🔌";
@@ -242,49 +229,18 @@ export function createInputSection(submitCustomPrompt) {
     display: none;
   `;
 
-  const clearDuplicatesBtn = document.createElement("button");
-  clearDuplicatesBtn.textContent = "🧹";
-  clearDuplicatesBtn.title = "Clear Duplicates";
-  clearDuplicatesBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
-
-  const modeStatusBtn = document.createElement("button");
-  modeStatusBtn.textContent = "🔄";
-  modeStatusBtn.title = "Show Transcription Mode Status";
-  modeStatusBtn.style.cssText = `
-    padding: 6px 8px;
-    font-size: 16px;
-    background: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  `;
-
   inputSection.appendChild(input);
   inputSection.appendChild(askBtn);
   inputSection.appendChild(reconnectBtn);
   inputSection.appendChild(screenshotBtn);
-  inputSection.appendChild(msTeamsTestBtn);
   inputSection.appendChild(statusBtn);
-  inputSection.appendChild(clearDuplicatesBtn);
-  inputSection.appendChild(modeStatusBtn);
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitCustomPrompt();
   });
 
 
-  return {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn}
+  return {inputSection, input, askBtn, reconnectBtn, screenshotBtn, statusBtn}
 } 
 
 
@@ -304,7 +260,7 @@ export function createConfigBtn() {
 }
 
 //  CONFIGURATION MODAL (MODEL - DIALOG)
-export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, websocketBackendUrl) {
+export function createConfigModal(apiKey, userProfileService) {
   const configModal = document.createElement("div");
   configModal.style.cssText = `
     display: none;
@@ -393,97 +349,15 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
     box-sizing: border-box;
   `;
 
-  const modelLabel = document.createElement("label");
-  modelLabel.textContent = "AI Model:";
-  modelLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const openaiModelInput = document.createElement("select");
-  openaiModelInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
-  
-  // Add model options
-  const models = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5o", "gpt-5o-mini"];
-  models.forEach(model => {
-    const option = document.createElement("option");
-    option.value = model;
-    option.textContent = model;
-    openaiModelInput.appendChild(option);
-  });
 
-  const jobRoleLabel = document.createElement("label");
-  jobRoleLabel.textContent = "Job Role:";
-  jobRoleLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const jobRoleInput = document.createElement("input");
-  jobRoleInput.type = "text";
-  jobRoleInput.placeholder = "Job Role";
-  jobRoleInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const specificInterviewLabel = document.createElement("label");
-  specificInterviewLabel.textContent = "Job Specialty Interview Prompt:";
-  specificInterviewLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const specificInterviewInput = document.createElement("input");
-  specificInterviewInput.type = "text";
-  specificInterviewInput.placeholder = "Specific Interview";
-  specificInterviewInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;  
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const extraInteviewPromptLabel = document.createElement("label");
-  extraInteviewPromptLabel.textContent = "Extra Interview Prompt:";
-  extraInteviewPromptLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const extraInteviewPromptInput = document.createElement("input");
-  extraInteviewPromptInput.type = "text";
-  extraInteviewPromptInput.placeholder = "Extra Interview Prompt";
-  extraInteviewPromptInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;    
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
-  const websocketUrlLabel = document.createElement("label");
-  websocketUrlLabel.textContent = "WebSocket Backend URL:";
-  websocketUrlLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
 
-  const websocketUrlInput = document.createElement("input");
-  websocketUrlInput.type = "text";
-  websocketUrlInput.placeholder = "ws://localhost:8080/ws/transcript";
-  websocketUrlInput.style.cssText = `
-    width: 100%;
-    margin-bottom: 10px;
-    font-size: 13px;    
-    padding: 6px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  `;
 
   const closeButton = document.createElement("span");
   closeButton.innerHTML = "&times;";
@@ -556,40 +430,354 @@ export function createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraIn
   apiKeyInput.value = apiKey;
   configModal.appendChild(closeButton);
 
-  configModal.appendChild(apiKeyLabel);
-  configModal.appendChild(apiKeyInput);
+  // configModal.appendChild(apiKeyLabel);
+  // configModal.appendChild(apiKeyInput);
 
 
 
-  // Set the selected model
-  openaiModelInput.value = aiModel;
-  configModal.appendChild(modelLabel);
-  configModal.appendChild(openaiModelInput);
 
-  jobRoleInput.value = jobRole;
-  configModal.appendChild(jobRoleLabel);
-  configModal.appendChild(jobRoleInput);
 
-  specificInterviewInput.value = jobSpecialy;
-  configModal.appendChild(specificInterviewLabel);
-  configModal.appendChild(specificInterviewInput);
 
-  extraInteviewPromptInput.value = extraInterviewPrompt;
-  configModal.appendChild(extraInteviewPromptLabel);
-  configModal.appendChild(extraInteviewPromptInput);
 
-  websocketUrlInput.value = websocketBackendUrl || "ws://localhost:8080/ws/transcript";
-  configModal.appendChild(websocketUrlLabel);
-  configModal.appendChild(websocketUrlInput);
+  // User Settings Section
+  const settingsSection = document.createElement("div");
+  settingsSection.style.cssText = `
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  `;
+
+  const settingsDisclaimer = document.createElement("div");
+  settingsDisclaimer.textContent = "⚠️ Prompt setting must be edit from app.qikaid.com";
+  settingsDisclaimer.style.cssText = `
+    display: block; 
+    font-size: 11px; 
+    color: #dc3545; 
+    background: #f8d7da; 
+    border: 1px solid #f5c6cb; 
+    border-radius: 4px; 
+    padding: 6px 8px; 
+    margin-bottom: 8px;
+    font-weight: 500;
+  `;
+
+  const settingsTitle = document.createElement("div");
+  settingsTitle.textContent = "Prompt Setting";
+  settingsTitle.style.cssText = `
+    display: block; 
+    font-weight: bold; 
+    font-size: 14px; 
+    color: #333; 
+    margin-bottom: 8px; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #ddd;
+  `;
+
+  const settingsLabel = document.createElement("label");
+  settingsLabel.textContent = "User Settings:";
+  settingsLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 8px;`;
+
+  const settingsDetails = document.createElement("div");
+  settingsDetails.style.cssText = `
+    background: rgba(248, 249, 250,0.7);
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+  `;
+
+  const loadUserSettings = async () => {
+    try {
+      const userConfig = await userProfileService.getCachedSettings();
+      if (userConfig && userConfig.settings) {
+        const settings = userConfig.settings;
+        settingsDetails.innerHTML = `
+          <div style="margin-bottom: 8px;">
+            <label for="default-temperature-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Temperature:</label>
+            <input id="default-temperature-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTemperature || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-max-tokens-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Max Tokens:</label>
+            <input id="default-max-tokens-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultMaxTokens || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-top-p-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Top P:</label>
+            <input id="default-top-p-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTopP || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="default-top-k-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Top K:</label>
+            <input id="default-top-k-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.defaultTopK || 'Not set'}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label for="presence-penalty-setting" style="display: block; font-weight: bold; margin-bottom: 2px; font-size: 11px; color: #666;">Presence Penalty:</label>
+            <input id="presence-penalty-setting" readonly style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; background: #fff; color: #000;" value="${settings.presencePenalty || 'Not set'}">
+          </div>
+  
+        `;
+      } else {
+        settingsDetails.innerHTML = `
+          <div style="text-align: center; color: #666; font-size: 12px; padding: 20px;">
+            No user settings found
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading user settings:', error);
+      settingsDetails.innerHTML = `
+        <div style="text-align: center; color: #dc3545; font-size: 12px; padding: 20px;">
+          Error loading user settings
+        </div>
+      `;
+    }
+  };
+
+  settingsSection.appendChild(settingsDisclaimer);
+  settingsSection.appendChild(settingsTitle);
+  settingsSection.appendChild(settingsLabel);
+  settingsSection.appendChild(settingsDetails);
+  configModal.appendChild(settingsSection);
+
+  // User Profile Section
+  const profileSection = document.createElement("div");
+  profileSection.style.cssText = `
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  `;
+
+  const profileTitle = document.createElement("div");
+  profileTitle.textContent = "Prompt Profile";
+  profileTitle.style.cssText = `
+    display: block; 
+    font-weight: bold; 
+    font-size: 14px; 
+    color: #333; 
+    margin-bottom: 8px; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #ddd;
+  `;
+
+  const profileLabel = document.createElement("label");
+  profileLabel.textContent = "User Profile:";
+  profileLabel.style.cssText = `display: block; font-weight: bold; margin-bottom: 4px;`;
+
+  // Create container for dropdown and refresh button
+  const profileContainer = document.createElement("div");
+  profileContainer.style.cssText = `
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  `;
+
+  const profileSelect = document.createElement("select");
+  profileSelect.style.cssText = `
+    flex: 1;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  `;
+
+  const refreshBtn = document.createElement("button");
+  refreshBtn.textContent = "🔄";
+  refreshBtn.title = "Refresh Profiles";
+  refreshBtn.style.cssText = `
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: rgba(248, 249, 250,0.7);
+    cursor: pointer;
+    min-width: 40px;
+  `;
+
+  // Add hover effect
+  refreshBtn.addEventListener("mouseenter", () => {
+    refreshBtn.style.background = "rgba(233, 236, 239,0.7)";
+  });
+  refreshBtn.addEventListener("mouseleave", () => {
+    refreshBtn.style.background = "rgba(248, 249, 250,0.7)";
+  });
+
+  // Add click handler for refresh
+  refreshBtn.addEventListener("click", async () => {
+    try {
+      refreshBtn.textContent = "⏳";
+      refreshBtn.disabled = true;
+      console.log("Manual refresh triggered");
+      
+      // Force refresh profiles
+      await userProfileService.refreshInBackground();
+      
+      // Reload the dropdown
+      await loadUserProfiles();
+      
+      refreshBtn.textContent = "🔄";
+      refreshBtn.disabled = false;
+      console.log("Manual refresh completed");
+    } catch (error) {
+      console.error("Error during manual refresh:", error);
+      refreshBtn.textContent = "❌";
+      setTimeout(() => {
+        refreshBtn.textContent = "🔄";
+        refreshBtn.disabled = false;
+      }, 2000);
+    }
+  });
+
+  profileContainer.appendChild(profileSelect);
+  profileContainer.appendChild(refreshBtn);
+
+  const profileDetails = document.createElement("div");
+  profileDetails.id = "profile-details";
+  profileDetails.style.cssText = `
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(248, 249, 250,0.7);
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    font-size: 12px;
+    display: none;
+  `;
+
+  // Function to load and display profiles
+  const loadUserProfiles = async () => {
+    try {
+      console.log("loadUserProfiles called");
+      if (!userProfileService) {
+        console.log("User profile service not available");
+        return;
+      }
+
+      console.log("Getting cached profiles...");
+      const profiles = await userProfileService.getCachedProfiles();
+      console.log("Received profiles:", profiles);
+      
+      // Clear existing options
+      profileSelect.innerHTML = '<option value="">Select a profile...</option>';
+      
+      if (profiles.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No profiles available";
+        option.disabled = true;
+        profileSelect.appendChild(option);
+        return;
+      }
+
+      // Add profile options
+      profiles.forEach((profile, index) => {
+        const option = document.createElement("option");
+        option.value = profile.userProfileId;
+        option.textContent = profile.displayName;
+        profileSelect.appendChild(option);
+      });
+
+      // Restore previously selected profile or select first profile by default
+      if (profiles.length > 0) {
+        chrome.storage.local.get(['selectedUserProfileId'], (result) => {
+          const savedProfileId = result.selectedUserProfileId;
+          let selectedProfile = null;
+          
+          if (savedProfileId) {
+            // Try to find the saved profile
+            selectedProfile = profiles.find(p => p.userProfileId === savedProfileId);
+            if (selectedProfile) {
+              profileSelect.value = savedProfileId;
+              displayProfileDetails(selectedProfile);
+              console.log('Restored previously selected profile from chrome storage:', selectedProfile.displayName);
+            } else {
+              console.log('Previously selected profile not found, selecting first profile');
+              selectedProfile = profiles[0];
+              profileSelect.value = profiles[0].userProfileId;
+              displayProfileDetails(profiles[0]);
+            }
+          } else {
+            // No saved profile, select first one
+            selectedProfile = profiles[0];
+            profileSelect.value = profiles[0].userProfileId;
+            displayProfileDetails(profiles[0]);
+            console.log('No previously selected profile, selecting first profile');
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error loading user profiles:", error);
+      profileSelect.innerHTML = '<option value="">Error loading profiles</option>';
+    }
+  };
+
+  // Function to display profile details
+  const displayProfileDetails = (profile) => {
+    if (!profile) {
+      profileDetails.style.display = "none";
+      return;
+    }
+
+    const createdDate = new Date(profile.createdAt).toLocaleDateString();
+    const updatedDate = new Date(profile.updatedAt).toLocaleDateString();
+
+    profileDetails.innerHTML = `
+      <div style="margin-bottom: 12px;">
+        <label for="user-info-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">User Info:</label>
+        <textarea id="user-info-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.userInfo || 'Not specified'}</textarea>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="purpose-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Purpose:</label>
+        <textarea id="purpose-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.purpose || 'Not specified'}</textarea>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="bot-role-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Bot Role:</label>
+        <textarea id="bot-role-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.botRole || 'Not specified'}</textarea>
+      </div>
+    `;
+    profileDetails.style.display = "block";
+  };
+
+  // Event listener for profile selection
+  profileSelect.addEventListener("change", async (e) => {
+    const selectedProfileId = e.target.value;
+    
+    // Save selected profile to chrome storage
+    if (selectedProfileId) {
+      chrome.storage.local.set({ 'selectedUserProfileId': selectedProfileId }, () => {
+        console.log('Saved selected profile ID to chrome storage:', selectedProfileId);
+      });
+    } else {
+      chrome.storage.local.remove(['selectedUserProfileId'], () => {
+        console.log('Cleared selected profile ID from chrome storage');
+      });
+    }
+    
+    if (!selectedProfileId) {
+      profileDetails.style.display = "none";
+      return;
+    }
+
+    try {
+      const profile = await userProfileService.getUserProfile(selectedProfileId);
+      displayProfileDetails(profile);
+    } catch (error) {
+      console.error("Error loading profile details:", error);
+    }
+  });
+
+  profileSection.appendChild(profileTitle);
+  profileSection.appendChild(profileLabel);
+  profileSection.appendChild(profileContainer);
+  profileSection.appendChild(profileDetails);
 
   // configModal.appendChild(textareaLabel);
   // configModal.appendChild(textarea);
 
+  configModal.appendChild(profileSection);
   configModal.appendChild(saveConfigBtn);
-  return {configModal, apiKeyInput,
-    saveConfigBtn,  openaiModelInput, 
-    jobRoleInput, specificInterviewInput,
-     extraInteviewPromptInput, websocketUrlInput} 
+
+  // Store functions for external access
+  configModal.loadUserProfiles = loadUserProfiles;
+  configModal.loadUserSettings = loadUserSettings;
+  return {configModal, apiKeyInput, saveConfigBtn} 
 }
 
 export function createDualContentLayout() {
@@ -606,21 +794,21 @@ export function createDualContentLayout() {
   // Left content area for GPT responses
   const gptResponseArea = createContentArea();
   gptResponseArea.style.cssText += `
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
   `;
   gptResponseArea.id = "gpt-response-area";
 
   // Middle blank panel (do nothing with it)
   const blankPanel = createContentArea();
   blankPanel.style.cssText += `
-    background: #f0f0f0;
+    background: rgba(240, 240, 240,0.7);
   `;
   blankPanel.id = "blank-panel";
 
   // Right content area for transcript only
   const transcriptArea = createContentArea();
   transcriptArea.style.cssText += `
-    background: #fafafa;
+    background: rgba(250, 250, 250,0.7);
   `;
   transcriptArea.id = "transcript-area";
 
@@ -633,7 +821,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #d1ecf1;
+    background: rgba(209, 236, 241,0.7);
     border-radius: 4px;
   `;
 
@@ -645,7 +833,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #e2e3e5;
+    background: rgba(226, 227, 229,0.7);
     border-radius: 4px;
   `;
 
@@ -657,7 +845,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #e9ecef;
+    background: rgba(233, 236, 239,0.7);
     border-radius: 4px;
   `;
 
@@ -703,7 +891,7 @@ function createResizeHandle() {
   const handle = document.createElement("div");
   handle.style.cssText = `
     width: 6px;
-    background: #ddd;
+    background: rgba(221, 221, 221,0.7);
     cursor: col-resize;
     border-radius: 3px;
     margin: 0 2px;
@@ -712,11 +900,11 @@ function createResizeHandle() {
   `;
   
   handle.addEventListener("mouseenter", () => {
-    handle.style.background = "#999";
+    handle.style.background = "rgba(153, 153, 153,0.7)";
   });
   
   handle.addEventListener("mouseleave", () => {
-    handle.style.background = "#ddd";
+    handle.style.background = "rgba(221, 221, 221,0.7)";
   });
   
   return handle;
@@ -767,7 +955,7 @@ export function createGPTContextMenu(e, options, onOptionClick) {
     position: fixed;
     top: ${e.pageY}px;
     left: ${e.pageX}px;
-    background: #fefefe;
+    background: rgba(254, 254, 254,0.7);
     border: 1px solid #ccc;
     padding: 4px;
     font-size: 13px;
@@ -784,7 +972,7 @@ export function createGPTContextMenu(e, options, onOptionClick) {
       cursor: pointer;
       border-bottom: 1px solid #eee;
     `;
-    item.onmouseenter = () => item.style.background = "#eee";
+    item.onmouseenter = () => item.style.background = "rgba(238, 238, 238,0.7)";
     item.onmouseleave = () => item.style.background = "transparent";
     item.onclick = () => onOptionClick(prefix, label);
     menu.appendChild(item);
@@ -795,18 +983,138 @@ export function createGPTContextMenu(e, options, onOptionClick) {
 
 export const CONTEXT_MENU_OPTIONS = [
   { label: "💬 Ask GPT about this", prefix: "" },
-  {
-    label: "📘 Explain briefly (interview-friendly)",
-    prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
-  },
-  {
-    label: "🛠️ Real-world use case (interview-friendly)",
-    prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
-  },
-  {
-    label: "🧩 Explain + Use Case (interview-friendly)",
-    prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
-  },
+  // {
+  //   label: "📘 Explain briefly (interview-friendly)",
+  //   prefix: "Briefly explain this in a way that's clear and friendly for a software engineering interview conversation: ",
+  // },
+  // {
+  //   label: "🛠️ Real-world use case (interview-friendly)",
+  //   prefix: "Give a real-world use case, explained in a clear and conversational way suitable for a software engineering interview: ",
+  // },
+  // {
+  //   label: "🧩 Explain + Use Case (interview-friendly)",
+  //   prefix: "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: ",
+  // },
 ];
+
+export function createLockModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  const box = document.createElement('div');
+  box.style.cssText = `
+    background: rgba(255, 255, 255,0.7);
+    border-radius: 12px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+    padding: 40px 32px;
+    max-width: 400px;
+    text-align: center;
+    font-family: inherit;
+  `;
+  
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+  `;
+  
+  // Login button
+  const loginBtn = document.createElement('a');
+  loginBtn.href = "https://app.qikaid.com";
+  loginBtn.target = "_blank";
+  loginBtn.textContent = "Go to QikAid Login";
+  loginBtn.style.cssText = `
+    display: inline-block;
+    padding: 12px 28px;
+    background: rgba(0, 120, 212,0.7);
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+  `;
+  
+  // Sync button
+  const syncBtn = document.createElement('button');
+  syncBtn.innerHTML = '🔄';
+  syncBtn.title = 'Sync & Validate Token';
+  syncBtn.style.cssText = `
+    padding: 12px;
+    background: rgba(40, 167, 69,0.7);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    min-width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  
+  // Add click handler for sync button
+  syncBtn.addEventListener('click', async () => {
+    syncBtn.innerHTML = '⏳';
+    syncBtn.style.background = 'rgba(108, 117, 125,0.7)';
+    syncBtn.disabled = true;
+    
+    try {
+      // Request token validation/refresh from background
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN_REQUEST" }, resolve);
+      });
+      
+      if (response && response.success) {
+        // Success - close modal and unlock UI
+        if (modal.parentNode) modal.parentNode.removeChild(modal);
+        // Trigger unlock (this will be handled by the token refresh success)
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ type: "CHECK_TOKEN_STATUS" });
+        }, 1000);
+      } else {
+        // Failed - reset button
+        syncBtn.innerHTML = '🔄';
+        syncBtn.style.background = 'rgba(40, 167, 69,0.7)';
+        syncBtn.disabled = false;
+        syncBtn.title = 'Sync failed - try again';
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+      syncBtn.innerHTML = '❌';
+      syncBtn.style.background = 'rgba(220, 53, 69,0.7)';
+      syncBtn.disabled = false;
+      syncBtn.title = 'Sync failed - try again';
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        syncBtn.innerHTML = '🔄';
+        syncBtn.style.background = 'rgba(40, 167, 69,0.7)';
+        syncBtn.title = 'Sync & Validate Token';
+      }, 2000);
+    }
+  });
+  
+  buttonContainer.appendChild(loginBtn);
+  buttonContainer.appendChild(syncBtn);
+  
+  box.innerHTML = `
+    <h2 style="margin-bottom: 18px; color: #222;">Authentication Required</h2>
+    <p style="margin-bottom: 24px; color: #444;">Your session has expired or you are not logged in.<br>Please log in to continue using QikAid.</p>
+  `;
+  box.appendChild(buttonContainer);
+  modal.appendChild(box);
+  return modal;
+}
 
 

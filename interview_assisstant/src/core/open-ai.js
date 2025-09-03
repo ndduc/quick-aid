@@ -34,10 +34,130 @@ function getModelName(aiModel) {
 }
 
 // ============================================================================
-// PROMPT GENERATION FUNCTIONS
+// PROMPT GENERATION FUNCTIONS USING USER PROFILE DATA
 // ============================================================================
 
-export function generateInterviewPayload(jobRole, specialty, extraPrompt) {
+/**
+ * Generate interview payload using user profile data from extension storage
+ * @returns {Promise<Array>} Messages array with system and user prompts
+ */
+export async function generateInterviewPayload(jobRole, specialty, extraPrompt) {
+  try {
+    // Get the selected profile from chrome storage cache
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get(['userProfileCache'], resolve);
+    });
+    
+    const cacheData = result.userProfileCache;
+    const selectedProfileId = cacheData ? cacheData.selectedUserProfileId : null;
+    console.log('Selected profile ID from cache:', selectedProfileId);
+    if (!selectedProfileId) {
+      console.log('No profile selected, using default payload');
+      return getDefaultPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    // Get the selected profile data from chrome storage
+    const profileResult = await new Promise((resolve) => {
+      chrome.storage.local.get(['userProfileCache'], resolve);
+    });
+    
+    const profileCacheData = profileResult.userProfileCache;
+    if (!profileCacheData || !profileCacheData.profileCache) {
+      console.log('No profile cache found, using default payload');
+      return getDefaultPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    // Find the selected profile
+    const profile = profileCacheData.profileCache.find(p => p.userProfileId === selectedProfileId);
+    
+    if (!profile) {
+      console.log('Selected profile not found in cache, using default payload');
+      return getDefaultPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    console.log('Generating payload using profile:', profile.displayName);
+    
+    // Generate payload using profile data
+    return [
+      {
+        role: "system",
+        content: profile.botRole || "You are a helpful interview assistant."
+      },
+      {
+        role: "user",
+        content: `User Info: ${profile.userInfo || 'No user info provided'}\n\nPurpose: ${profile.purpose || 'No purpose specified'}`
+      }
+    ];
+    
+  } catch (error) {
+    console.error('Error generating interview payload:', error);
+    return getDefaultPayload(jobRole, specialty, extraPrompt);
+  }
+}
+
+/**
+ * Generate interview payload for screenshot mode using user profile data
+ * @returns {Promise<Array>} Messages array with system and user prompts
+ */
+export async function generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt) {
+  try {
+    // Get the selected profile from chrome storage cache
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get(['userProfileCache'], resolve);
+    });
+    
+    const cacheData = result.userProfileCache;
+    const selectedProfileId = cacheData ? cacheData.selectedUserProfileId : null;
+    
+    if (!selectedProfileId) {
+      console.log('No profile selected for screenshot mode, using default payload');
+      return getDefaultScreenshotPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    // Get the selected profile data from chrome storage
+    const profileResult = await new Promise((resolve) => {
+      chrome.storage.local.get(['userProfileCache'], resolve);
+    });
+    
+    const screenshotCacheData = profileResult.userProfileCache;
+    if (!screenshotCacheData || !screenshotCacheData.profileCache) {
+      console.log('No profile cache found for screenshot mode, using default payload');
+      return getDefaultScreenshotPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    // Find the selected profile
+    const profile = screenshotCacheData.profileCache.find(p => p.userProfileId === selectedProfileId);
+    
+    if (!profile) {
+      console.log('Selected profile not found in cache for screenshot mode, using default payload');
+      return getDefaultScreenshotPayload(jobRole, specialty, extraPrompt);
+    }
+    
+    console.log('Generating screenshot payload using profile:', profile.displayName);
+    
+    // Generate payload using profile data
+    return [
+      {
+        role: "system",
+        content: profile.botRole || "You are a helpful interview assistant."
+      },
+      {
+        role: "user",
+        content: `User Info: ${profile.userInfo || 'No user info provided'}\n\nPurpose: ${profile.purpose || 'No purpose specified'}`
+      }
+    ];
+    
+  } catch (error) {
+    console.error('Error generating screenshot payload:', error);
+    return getDefaultScreenshotPayload(jobRole, specialty, extraPrompt);
+  }
+}
+
+/**
+ * Get default payload when no profile is selected
+ * @returns {Array} Default messages array
+ */
+function getDefaultPayload(jobRole, specialty, extraPrompt) {
   return [
     {
       role: "system",
@@ -48,7 +168,11 @@ export function generateInterviewPayload(jobRole, specialty, extraPrompt) {
   ];
 }
 
-export function generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt) {
+/**
+ * Get default screenshot payload when no profile is selected
+ * @returns {Array} Default messages array for screenshot mode
+ */
+function getDefaultScreenshotPayload(jobRole, specialty, extraPrompt) {
   return [
     {
       role: "system",
@@ -63,15 +187,26 @@ export function generateInterviewPayloadForScreenshotMode(jobRole, specialty, ex
 // API CONFIGURATION
 // ============================================================================
 
-function getApiConfig(apiKey, aiModel, maxTokens = 4000) {
+async function getApiConfig(apiKey, aiModel, maxTokens = 4000) {
+  // Get user settings from cache
+  let userSettings = null;
+  try {
+    const result = await chrome.storage.local.get(['userProfileCache']);
+    if (result.userProfileCache && result.userProfileCache.settingsCache) {
+      userSettings = result.userProfileCache.settingsCache.settings;
+    }
+  } catch (error) {
+    console.warn('Could not load user settings for hyperparameters:', error);
+  }
+
   return {
-    temperature: 0.1,
-    max_tokens: maxTokens,
+    temperature: userSettings?.defaultTemperature ?? 0.1,
+    max_tokens: userSettings?.defaultMaxTokens ?? maxTokens,
     model: getModelName(aiModel),
     messages: [],
-    top_p: 0.9,
-    frequency_penalty: 0.1,
-    presence_penalty: 0.1,
+    top_p: userSettings?.defaultTopP ?? 0.9,
+    // frequency_penalty: userSettings?.defaultTopK ?? 0.1, // Using defaultTopK as frequency_penalty fallback
+    // presence_penalty: userSettings?.presencePenalty ?? 0.1,
   };
 }
 
@@ -92,8 +227,9 @@ export async function fetchGPTResponse(question, messages, apiKey, aiModel) {
     const updatedMessages = [...messages, { role: "user", content: question }];
     
     // Prepare API payload with higher token limit for detailed responses
+    const apiConfig = await getApiConfig(apiKey, aiModel, 4000);
     const payload = {
-      ...getApiConfig(apiKey, aiModel, 4000),
+      ...apiConfig,
       messages: updatedMessages,
     };
 
@@ -141,8 +277,9 @@ export async function sendImageToGPT(imageDataUrl, messagesScreenshotMode, apiKe
     ];
 
     // Prepare API payload for vision model with high token limit for detailed analysis
+    const apiConfig = await getApiConfig(apiKey, aiModel, 8000);
     const payload = {
-      ...getApiConfig(apiKey, aiModel, 8000),
+      ...apiConfig,
       messages: visionMessages,
     };
 

@@ -1,35 +1,84 @@
-import { 
-  fetchGPTResponse, sendImageToGPT,
-  generateInterviewPayload, generateInterviewPayloadForScreenshotMode} from './open-ai.js';
+
 import {
   getApiKey, getJobRole, 
   getJobSpecialy, getExtraInterviewPrompt, 
   getOpenAiModel, getWebSocketBackendUrl, saveWebSocketBackendUrl} from './config.js'
 import {checkTranscript} from './transcribing-logic.js'
 import {webSocketService} from './websocket-service.js'
-import {autoInitializeMSTeams, getMSTeamsMonitoringStatus, testMSCaptionProcessing} from './transcribing-ms-team.js'
+import {autoInitializeMSTeams, getMSTeamsMonitoringStatus} from './transcribing-ms-team.js'
 import {setupTeamsLiveCaptions} from './ms-find-live-captions.js'
-import {createHeader, createContentArea, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS} from './ui.js'
+import {createHeader, createOverlay, createResizer, createLeftResizer, createInputSection, createConfigBtn, 
+  createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
+import userProfileService from './user-profile-service.js'
+import {extractMeetingTitle} from './ms-find-title-info.js'
+import {startMeetingMonitor, getMeetingStatus, getCurrentMeetingId, getCurrentMeetingTitle} from './ms-meeting-monitor.js'
 
+
+// Feature flag to switch between qikaid-bot and open-ai
+const FLAG_QIKAID_BOT_ENABLED = true;
+
+// Import both modules
+import * as openAi from './open-ai.js';
+import * as qikaidBot from './qikaid-bot.js';
+
+// Wrapper functions to handle different parameter signatures
+const fetchGPTResponse = async (question, messages, apiKey) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.fetchGPTResponse(question, messages);
+  } else {
+    return await openAi.fetchGPTResponse(question, messages, apiKey, "gpt-4o-mini");
+  }
+};
+
+const sendImageToGPT = async (imageDataUrl, messages, apiKey) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.sendImageToGPT(imageDataUrl, messages);
+  } else {
+    return await openAi.sendImageToGPT(imageDataUrl, messages, apiKey, "gpt-4o");
+  }
+};
+
+const generateInterviewPayload = async (jobRole, specialty, extraPrompt) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.generateInterviewPayload();
+  } else {
+    return openAi.generateInterviewPayload(jobRole, specialty, extraPrompt);
+  }
+};
+
+const generateInterviewPayloadForScreenshotMode = async (jobRole, specialty, extraPrompt) => {
+  if (FLAG_QIKAID_BOT_ENABLED) {
+    return await qikaidBot.generateInterviewPayloadForScreenshotMode();
+  } else {
+    return openAi.generateInterviewPayloadForScreenshotMode(jobRole, specialty, extraPrompt);
+  }
+};
 
 let apiKey = getApiKey();
 
-let lastLine = "";
 const transcriptLog = new Set();
 
-let aiModel = getOpenAiModel();
+
 let jobRole = getJobRole();
 let jobSpecialy = getJobSpecialy();
 let extraInterviewPrompt = getExtraInterviewPrompt();
 
-// Verify initial configuration
-verifyConfiguration();
 
 // Initialize WebSocket service and set up classification callback
+webSocketService.initialize();
 setupWebSocketClassification();
+
+// Make WebSocket service available globally for meeting monitor
+window.webSocketService = webSocketService;
 
 // Initialize MS Teams monitoring if meeting is detected
 setupMSTeamsMonitoring();
+
+// Initialize meeting monitor
+setupMeetingMonitor();
+
+// Prefetch user profiles on extension startup
+initializeUserProfiles();
 
 
 let isDragging = false, offsetX = 0, offsetY = 0;
@@ -119,7 +168,7 @@ if (AUTO_UI_MANAGEMENT_ENABLED) {
 } else {
   // UI always visible (traditional behavior)
   overlay.style.display = "block";
-  console.log("uto UI Management DISABLED - UI always visible");
+  console.log("Auto UI Management DISABLED - UI always visible");
 }
 
 // Add minimize functionality
@@ -128,7 +177,7 @@ minimizeBtn.addEventListener("click", () => {
     // Restore the overlay
     overlay.style.height = "600px";
     overlay.style.width = "1200px";
-    overlay.style.background = "white";
+    overlay.style.background = "rgba(255, 255, 255,0.7)";
     overlay.style.border = "2px solid #ccc";
     overlay.style.borderRadius = "8px";
     overlay.style.boxShadow = "0 0 12px rgba(0,0,0,0.3)";
@@ -145,7 +194,7 @@ minimizeBtn.addEventListener("click", () => {
     enableResizeFunctionality();
     
     // Reset header styling for restored state
-    header.style.background = "#f5f5f5";
+    header.style.background = "rgba(245, 245, 245,0.7)";
     header.style.borderRadius = "0";
     header.style.padding = "6px 10px";
     
@@ -162,6 +211,9 @@ minimizeBtn.addEventListener("click", () => {
     
     // Show the minimize button again when restored
     minimizeBtn.style.display = "block";
+
+    // If UI was locked, ensure modal is visible again after restore
+    ensureLockModalVisible();
   } 
   else {
     // Minimize to look like a warm yellow extension popup
@@ -221,7 +273,7 @@ minimizeBtn.addEventListener("click", () => {
     disableResizeFunctionality();
     
     // Update header styling for minimized state
-    header.style.background = "#E6C25A";
+    header.style.background = "rgba(230, 194, 90,0.7)";
     header.style.borderRadius = "8px 8px 0 0";
     header.style.padding = "8px 36px";
     
@@ -233,6 +285,9 @@ minimizeBtn.addEventListener("click", () => {
     
     // Hide the minimize button when minimized
     minimizeBtn.style.display = "none";
+
+    // If lock modal is present, remove it while minimized
+    if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
   }
 });
 
@@ -250,9 +305,8 @@ leftResizer.style.cursor = "ne-resize";
 
 
 // === Bottom Input Section ===
-const {inputSection, input, askBtn, reconnectBtn, screenshotBtn, msTeamsTestBtn, statusBtn, clearDuplicatesBtn, modeStatusBtn} = createInputSection(submitCustomPrompt);
+const {inputSection, input, askBtn, reconnectBtn, screenshotBtn, statusBtn} = createInputSection(submitCustomPrompt);
 overlay.appendChild(inputSection);
-
 
 askBtn.onclick = submitCustomPrompt;
 
@@ -279,10 +333,10 @@ reconnectBtn.onclick = async () => {
           appendToOverlay("✅ WebSocket reconnection initiated!", true);
           
           // Update button appearance to show success
-          reconnectBtn.style.background = "#28a745";
+          reconnectBtn.style.background = "rgba(40, 167, 69,0.7)";
           reconnectBtn.textContent = "✅";
           setTimeout(() => {
-            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.style.background = "rgba(255, 193, 7,0.7)";
             reconnectBtn.textContent = "🔌";
           }, 2000);
           
@@ -291,10 +345,10 @@ reconnectBtn.onclick = async () => {
           appendToOverlay("❌ WebSocket reconnection failed: " + error.message, true);
           
           // Update button appearance to show failure
-          reconnectBtn.style.background = "#dc3545";
+          reconnectBtn.style.background = "rgba(220, 53, 69,0.7)";
           reconnectBtn.textContent = "❌";
           setTimeout(() => {
-            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.style.background = "rgba(255, 193, 7,0.7)";
             reconnectBtn.textContent = "🔌";
           }, 2000);
         }
@@ -308,54 +362,18 @@ reconnectBtn.onclick = async () => {
     appendToOverlay("❌ Reconnection error: " + error.message, true);
   }
 };
-msTeamsTestBtn.onclick = () => {
-  testMSCaptionProcessing(appendToOverlay, updateLivePreview);
-  
-  // Also display in middle panel for immediate feedback
-  const testText = "This is a test caption from Microsoft Teams";
-  displayTranscriptInMiddlePanel(testText, "Test Speaker");
-};
 
 statusBtn.onclick = () => {
   checkWebSocketStatus();
 };
 
-clearDuplicatesBtn.onclick = () => {
-  // Import and call the clear duplicates function
-  import('./transcribing-ms-team.js').then(({ clearTranscriptDuplicates }) => {
-    clearTranscriptDuplicates();
-    appendToOverlay("🧹 Duplicates cleared from transcript and middle panel", true);
-  }).catch(err => {
-    console.error('Failed to import clearTranscriptDuplicates:', err);
-    appendToOverlay("❌ Failed to clear duplicates", true);
-  });
-};
 
-modeStatusBtn.onclick = () => {
-  // Import and call the mode status function
-  import('./transcribing-ms-team.js').then(({ displayTranscriptionModeStatus }) => {
-    const statusText = displayTranscriptionModeStatus();
-    appendToOverlay(statusText, true);
-  }).catch(err => {
-    console.error('Failed to import displayTranscriptionModeStatus:', err);
-    appendToOverlay("❌ Failed to get mode status", true);
-  });
-};
-// input.addEventListener("keydown", (e) => {
-//   if (e.key === "Enter") submitCustomPrompt();
-// });
 
-// Removed duplicate line
 
 // === SCREENSHOT Button Logic ===
 inputSection.appendChild(screenshotBtn);
 
-// === Minimize toggle logic ===
-// minimizeBtn.onclick = () => {
-//   isMinimized = !isMinimized;
-//   contentArea.style.display = isMinimized ? "none" : "block";
-//   minimizeBtn.textContent = isMinimized ? "+" : "–";
-// };
+
 
 // === Drag functionality ===
 header.addEventListener("mousedown", (e) => {
@@ -393,16 +411,15 @@ document.addEventListener("contextmenu", (e) => {
   const onOptionClick = async (prefix, label) => {
     const prompt = prefix + selection;
     appendToOverlay(`➡️ You: ${prompt}`, false); // User input goes to right panel
-    appendToOverlay("AI Response: ...thinking", true); // GPT thinking goes to left panel
+    appendToOverlay("...thinking", true); // GPT thinking goes to left panel
+    const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await fetchGPTResponse(
       prompt, 
-      generateInterviewPayload(
-        jobRole, jobSpecialy, extraInterviewPrompt),
-        apiKey,
-        aiModel
+      messages,
+      apiKey
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "AI Response: ...thinking") el.remove();
+      if (el.textContent === "...thinking") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
     menu.remove();
@@ -440,17 +457,15 @@ screenshotBtn.onclick = async () => {
     appendImageToOverlay(dataUrl);
 
     // Send to GPT
-    appendToOverlay("🧠 GPT: ...analyzing image", true); // GPT thinking goes to left panel
+    appendToOverlay("...analyzing image", true); // GPT thinking goes to left panel
+    const messages = await generateInterviewPayloadForScreenshotMode(jobRole, jobSpecialy, extraInterviewPrompt);
     const reply = await sendImageToGPT(
       dataUrl, 
-      generateInterviewPayloadForScreenshotMode(
-      jobRole, jobSpecialy, 
-      extraInterviewPrompt),
-      apiKey,
-      aiModel
+      messages,
+      apiKey
     );
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "🧠 GPT: ...analyzing image") el.remove();
+      if (el.textContent === "...analyzing image") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
   } catch (err) {
@@ -462,12 +477,10 @@ screenshotBtn.onclick = async () => {
 const configBtn = createConfigBtn();
 header.appendChild(configBtn);
 
-const {
+  const {
    configModal, apiKeyInput, 
-   saveConfigBtn,
-   openaiModelInput, jobRoleInput, 
-   specificInterviewInput, extraInteviewPromptInput, websocketUrlInput
-  } = createConfigModal(apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt, getWebSocketBackendUrl());
+   saveConfigBtn
+  } = createConfigModal(apiKey, userProfileService);
 document.body.appendChild(configModal);
 
 configBtn.onclick = () => {
@@ -475,6 +488,26 @@ configBtn.onclick = () => {
   if (isConfigOpen) {
     // Refresh config values from localStorage when opening
     refreshConfigValues();
+    // Load user profiles when opening config modal
+    console.log("Config modal opened, checking for loadUserProfiles function...");
+    console.log("configModal.loadUserProfiles exists:", !!configModal.loadUserProfiles);
+    console.log("userProfileService available:", !!userProfileService);
+    console.log("Profiles initialized:", userProfileService.isProfilesInitialized());
+    
+    if (configModal.loadUserProfiles) {
+      console.log("Calling loadUserProfiles...");
+      configModal.loadUserProfiles();
+      
+      // Optionally refresh in background if cache is stale
+      userProfileService.refreshInBackground();
+    }
+    
+    if (configModal.loadUserSettings) {
+      console.log("Calling loadUserSettings...");
+      configModal.loadUserSettings();
+    } else {
+      console.error("loadUserSettings function not found on configModal");
+    }
     configModal.style.display = "block";
   } else {
     configModal.style.display = "none";
@@ -485,32 +518,16 @@ configBtn.onclick = () => {
 function refreshConfigValues() {
   // Reload values from localStorage
   apiKey = getApiKey();
-  aiModel = getOpenAiModel();
   jobRole = getJobRole();
   jobSpecialy = getJobSpecialy();
   extraInterviewPrompt = getExtraInterviewPrompt();
   
   // Update input fields with current values
   apiKeyInput.value = apiKey;
-  openaiModelInput.value = aiModel;
-  jobRoleInput.value = jobRole;
-  specificInterviewInput.value = jobSpecialy;
-  extraInteviewPromptInput.value = extraInterviewPrompt;
-  websocketUrlInput.value = getWebSocketBackendUrl();
   
-  console.log("Config refreshed:", { apiKey, aiModel, jobRole, jobSpecialy, extraInterviewPrompt });
+  console.log("Config refreshed:", { apiKey, jobRole, jobSpecialy, extraInterviewPrompt });
 }
 
-// Function to verify configuration is properly loaded
-function verifyConfiguration() {
-  // console.log("=== Configuration Verification ===");
-  // console.log("API Key:", apiKey ? "Set (" + apiKey.substring(0, 10) + "...)" : "Not set");
-  // console.log("AI Model:", aiModel);
-  // console.log("Job Role:", jobRole);
-  // console.log("Job Specialty:", jobSpecialy);
-  // console.log("Extra Prompt:", extraInterviewPrompt);
-  // console.log("================================");
-}
 
 // Function to setup WebSocket classification handling
 function setupWebSocketClassification() {
@@ -528,8 +545,22 @@ function setupWebSocketClassification() {
   console.log('WebSocket status:', webSocketService.getConnectionStatus());
 }
 
+// Function to initialize user profiles on startup
+async function initializeUserProfiles() {
+  try {
+    console.log('Initializing user profiles on startup...');
+    
+    // The userProfileService automatically loads cache when created
+    // and prefetches in background if needed
+    console.log('User profiles auto-initialization completed');
+  } catch (error) {
+    console.error('Error initializing user profiles:', error);
+  }
+}
+
 // Function to setup MS Teams monitoring
 function setupMSTeamsMonitoring() {
+  console.log("Setting up MS Teams monitoring");
   // Try to auto-detect and initialize MS Teams monitoring
   const teamsInitialized = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
   
@@ -557,50 +588,65 @@ function setupMSTeamsMonitoring() {
       const status = getMSTeamsMonitoringStatus();
       updateMSTeamsStatus(status.isMonitoring);
     }, 5000);
-    
-    // Check WebSocket status and show offline transcript data every 10 seconds
+  }
+}
+
+// Function to setup meeting monitor
+function setupMeetingMonitor() {
+  console.log("Setting up meeting monitor");
+  
+  // Start the meeting monitor
+  startMeetingMonitor();
+  
+  // Log initial status
+  const status = getMeetingStatus();
+  console.log("Meeting monitor status:", status);
+  
+  // Set up periodic status logging (optional - for debugging)
+  setInterval(() => {
+    const currentStatus = getMeetingStatus();
+    if (currentStatus.isInMeeting) {
+      console.log(`Meeting Monitor: Active meeting ID: ${currentStatus.currentMeetingId}`);
+    }
+  }, 30000); // Log every 30 seconds when in meeting
+  
+
+
+}
+
+// Check WebSocket status and show offline transcript data every 10 seconds
     setInterval(() => {
       const wsStatus = webSocketService.getConnectionStatus();
       if (!wsStatus.isConnected) {
         // WebSocket is offline, show a status message in middle panel
         const blankPanel = document.getElementById('blank-panel');
         if (blankPanel && blankPanel.children.length === 0) {
-          const offlineMsg = document.createElement('div');
-          offlineMsg.style.cssText = `
-            padding: 16px;
-            margin: 16px;
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 2px dashed #dee2e6;
-          `;
-          offlineMsg.innerHTML = `
-            <div style="font-size: 16px; margin-bottom: 8px;">🔌 WebSocket Offline</div>
-            <div style="font-size: 12px;">Transcript data will appear here when connection is restored</div>
-            <div style="font-size: 10px; margin-top: 8px;">Click 🔌 button to check status</div>
-          `;
-          blankPanel.appendChild(offlineMsg);
+          // const offlineMsg = document.createElement('div');
+
+          // offlineMsg.innerHTML = `
+          //   <div style="font-size: 12px;">WebSocket Offline</div>
+          //   <div style="font-size: 12px;">Transcript data will appear here when connection is restored</div>
+          //   <div style="font-size: 12px;">Click 🔌 button to check status</div>
+          // `;
+          // blankPanel.appendChild(offlineMsg);
         }
       }
     }, 10000);
-  }
-}
 
 // Function to update MS Teams status indicator
 function updateMSTeamsStatus(isActive) {
-  if (!msTeamsStatus) return;
+  // if (!msTeamsStatus) return;
   
-  if (isActive) {
-    msTeamsStatus.textContent = "🎯";
-    msTeamsStatus.title = "MS Teams: Active & Monitoring";
-    msTeamsStatus.style.color = "#28a745"; // Green
-  } else {
-    msTeamsStatus.textContent = "🎯";
-    msTeamsStatus.title = "MS Teams: Not Detected";
-    msTeamsStatus.style.color = "#6c757d"; // Gray
-  }
+  // if (isActive) {
+  //   msTeamsStatus.textContent = "🎯";
+  //   msTeamsStatus.title = "MS Teams: Active & Monitoring";
+  //   msTeamsStatus.style.color = "#28a745"; // Green
+  // } else {
+  //   msTeamsStatus.textContent = "🎯";
+  //   msTeamsStatus.title = "MS Teams: Not Detected";
+  //   msTeamsStatus.style.color = "#6c757d"; // Gray
+  // }
+  // Deprecated
 }
 
 // Function to display classification results in the middle panel
@@ -616,7 +662,7 @@ function displayClassificationResult(result) {
     padding: 8px;
     margin: 4px 0;
     border-left: 4px solid #007bff;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border-radius: 4px;
     font-size: 12px;
   `;
@@ -671,7 +717,7 @@ function displayTranscriptInMiddlePanel(text, author = 'Unknown Speaker') {
     padding: 8px;
     margin: 4px 0;
     border-left: 4px solid #6c757d;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border-radius: 4px;
     font-size: 12px;
   `;
@@ -725,18 +771,22 @@ Session ID: ${wsStatus.meetingStatus.sessionId || 'None'}
 
 // Function to display meeting status changes
 function displayMeetingStatus(isInMeeting, sessionId = null) {
-  const statusText = isInMeeting 
-    ? `Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
-    : '⏹Teams Meeting Ended - Session Closed';
+  // const statusText = isInMeeting 
+  //   ? `Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
+  //   : '⏹Teams Meeting Ended - Session Closed';
     
-  appendToOverlay(statusText, true);
+  // appendToOverlay(statusText, true);
   
   // Update status button if available
   if (statusBtn) {
     statusBtn.textContent = isInMeeting ? "🎯" : "⏹️";
     statusBtn.title = isInMeeting ? `Active Meeting - ${sessionId?.substring(0, 8)}...` : "No Active Meeting";
-    statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
+    statusBtn.style.background = isInMeeting ? "rgba(40, 167, 69,0.7)" : "rgba(108, 117, 125,0.7)";
   }
+  
+  // Auto Enable Teams Live Captions for Transcribing
+  setupTeamsLiveCaptions();
+  extractMeetingTitle();
   
   // Automatically show/hide plugin UI based on meeting status (if feature flag enabled)
   if (AUTO_UI_MANAGEMENT_ENABLED) {
@@ -745,7 +795,7 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
       overlay.style.display = "block";
       
       // Automatically setup live captions for the meeting
-      setupTeamsLiveCaptions();
+      // setupTeamsLiveCaptions();
     } else {
       // Meeting ended - hide plugin UI completely
       overlay.style.display = "none";
@@ -756,14 +806,6 @@ function displayMeetingStatus(isInMeeting, sessionId = null) {
   }
 }
 
-
-
-
-
-
-
-
-
 saveConfigBtn.onclick = () => {
   try {
     // Save API Key
@@ -773,71 +815,33 @@ saveConfigBtn.onclick = () => {
       localStorage.setItem("openaiApiKey", key);
     }
 
-    // Save AI model
-    const newAiModel = openaiModelInput.value.trim();
-    if (newAiModel) {
-      aiModel = newAiModel; // Update global variable
-      localStorage.setItem("openaiModel", newAiModel);
-    }
 
-    // Save job role
-    const newJobRole = jobRoleInput.value.trim();
-    if (newJobRole) {
-      jobRole = newJobRole; // Update global variable
-      localStorage.setItem("jobRole", newJobRole);
-    }
 
-    // Save job specialty
-    const newJobSpecialy = specificInterviewInput.value.trim();
-    if (newJobSpecialy) {
-      jobSpecialy = newJobSpecialy; // Update global variable
-      localStorage.setItem("jobSpecialy", newJobSpecialy);
-    }
 
-    // Save extra interview prompt
-    const newExtraInterviewPrompt = extraInteviewPromptInput.value.trim();
-    if (newExtraInterviewPrompt) {
-      extraInterviewPrompt = newExtraInterviewPrompt; // Update global variable
-      localStorage.setItem("extraInterviewPrompt", newExtraInterviewPrompt);
-    }
-
-    // Save WebSocket backend URL
-    const newWebSocketUrl = websocketUrlInput.value.trim();
-    if (newWebSocketUrl) {
-      saveWebSocketBackendUrl(newWebSocketUrl);
-      // Update WebSocket service with new URL
-      webSocketService.updateBackendUrl(newWebSocketUrl);
-    }
 
     // Close config modal after saving
     isConfigOpen = false;
     configModal.style.display = "none";
+
     
-    // Verify the new configuration
-    verifyConfiguration();
-    
-    appendToOverlay("✅ Config saved and applied! Model: " + aiModel);
+    appendToOverlay("Config saved and applied!");
   } catch (e) {
-    appendToOverlay("❌ Error saving config: " + e.message);
+    appendToOverlay("Error saving config: " + e.message);
     console.error(e);
   }
 };
 
 // === Ask Button Logic ===
-function submitCustomPrompt() {
-  const value = "Briefly explain this and provide some basic use case (dont go to much into detail). Make it sound natural and appropriate for a software engineering interview: " + input.value.trim();
+async function submitCustomPrompt() {
+  const value =  input.value.trim();
   if (!value) return;
   appendToOverlay(`➡️ You: ${value}`, false); // User input goes to right panel
-  appendToOverlay("🧠 GPT: ...thinking", true); // GPT thinking goes to left panel
+  appendToOverlay("...thinking", true); // GPT thinking goes to left panel
   input.value = "";
-  fetchGPTResponse(value, generateInterviewPayload(
-    jobRole, jobSpecialy, 
-    extraInterviewPrompt),
-    apiKey,
-    aiModel
-  ).then(reply => {
+  const messages = await generateInterviewPayload(jobRole, jobSpecialy, extraInterviewPrompt);
+  fetchGPTResponse(value, messages, apiKey).then(reply => {
     document.querySelectorAll(".gpt-response").forEach((el) => {
-      if (el.textContent === "🧠 GPT: ...thinking") el.remove();
+      if (el.textContent === "...thinking") el.remove();
     });
     appendToOverlay(reply, true); // GPT response goes to left panel
   });
@@ -860,16 +864,6 @@ let livePreviewElement = null;
 let livePreviewTimeout = null;
 let lastLivePreviewText = '';
 
-// function updateLivePreview(text) {
-//   if (!livePreviewElement) {
-//     livePreviewElement = document.createElement("div");
-//     livePreviewElement.style.cssText = "margin-top: 10px; opacity: 0.6; font-style: italic;";
-//     contentArea.appendChild(livePreviewElement);
-//   }
-
-//   livePreviewElement.textContent = text;
-//   contentArea.scrollTop = contentArea.scrollHeight;
-// }
 function updateLivePreview(text) {
   // Check if this text is already present in the transcript area
   if (isDuplicateText(text)) {
@@ -914,7 +908,7 @@ function finalizeLivePreview() {
     finalizedEntry.style.cssText = `
       margin-top: 10px;
       padding: 8px;
-      background: #f8f9fa;
+      background: rgba(248, 249, 250,0.7);
       border-left: 3px solid #28a745;
       border-radius: 4px;
       font-weight: normal;
@@ -1394,8 +1388,60 @@ function showUI() {
 // Make the function globally available for background script communication
 window.showUI = showUI;
 
-// Listen for messages from background script to show/hide UI
+// --- UI Lockdown on Auth Failure ---
+let lockModal = null;
+let isUILocked = false;
+
+function ensureLockModalVisible() {
+  if (!isUILocked) return;
+  if (isMinimized) return; // don't show modal in minimized state
+  if (lockModal && lockModal.parentNode) return; // already shown
+
+  lockModal = createLockModal();
+
+  if (lockModal && overlay) {
+    overlay.style.position = overlay.style.position || 'fixed';
+    lockModal.style.position = 'absolute';
+    const headerHeight = header?.offsetHeight || 40;
+    lockModal.style.top = headerHeight + 'px';
+    lockModal.style.left = '0';
+    lockModal.style.right = '0';
+    lockModal.style.bottom = '0';
+    overlay.appendChild(lockModal);
+  }
+}
+
+function lockUIAndPromptLogin() {
+  isUILocked = true;
+
+  if (contentContainer) contentContainer.style.pointerEvents = 'none';
+  if (inputSection) inputSection.style.pointerEvents = 'none';
+  if (contentContainer) contentContainer.style.opacity = '0.5';
+  if (inputSection) inputSection.style.opacity = '0.5';
+
+  // Remove any existing lock modal before re-adding (only when not minimized)
+  if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
+
+  ensureLockModalVisible();
+}
+
+function unlockUI() {
+  isUILocked = false;
+  if (contentContainer) contentContainer.style.pointerEvents = '';
+  if (inputSection) inputSection.style.pointerEvents = '';
+  if (contentContainer) contentContainer.style.opacity = '';
+  if (inputSection) inputSection.style.opacity = '';
+  if (lockModal && lockModal.parentNode) lockModal.parentNode.removeChild(lockModal);
+  lockModal = null;
+}
+
+// Listen for lock message from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "LOCK_UI_AUTH_REQUIRED") {
+    lockUIAndPromptLogin();
+  } else if (message.type === "UNLOCK_UI") {
+    unlockUI();
+  }
   if (message.type === "SHOW_UI") {
     if (message.action === "toggle") {
       if (window.isUIHidden) {
