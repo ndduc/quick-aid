@@ -8,7 +8,7 @@ export function createOverlay() {
     height: 600px;
     resize: both;
     overflow: auto;
-    background: white;
+    background: rgba(255, 255, 255,0.7);
     color: black;
     font-size: 14px;
     padding: 0;
@@ -57,7 +57,7 @@ export function createLeftResizer() {
 export function createHeader() {
   const header = document.createElement("div");
   header.style.cssText = `
-    background: #f5f5f5;
+    background: rgba(245, 245, 245,0.7);
     padding: 6px 10px;
     font-weight: bold;
     font-size: 13px;
@@ -159,7 +159,7 @@ export function createInputSection(submitCustomPrompt) {
     display: flex;
     padding: 8px;
     border-top: 1px solid #ccc;
-    background: #fafafa;
+    background: rgba(250, 250, 250,0.7);
   `;
   
   const input = document.createElement("input");
@@ -479,7 +479,7 @@ export function createConfigModal(apiKey, userProfileService) {
 
   const settingsDetails = document.createElement("div");
   settingsDetails.style.cssText = `
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border: 1px solid #e9ecef;
     border-radius: 4px;
     padding: 12px;
@@ -587,17 +587,17 @@ export function createConfigModal(apiKey, userProfileService) {
     font-size: 13px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     cursor: pointer;
     min-width: 40px;
   `;
 
   // Add hover effect
   refreshBtn.addEventListener("mouseenter", () => {
-    refreshBtn.style.background = "#e9ecef";
+    refreshBtn.style.background = "rgba(233, 236, 239,0.7)";
   });
   refreshBtn.addEventListener("mouseleave", () => {
-    refreshBtn.style.background = "#f8f9fa";
+    refreshBtn.style.background = "rgba(248, 249, 250,0.7)";
   });
 
   // Add click handler for refresh
@@ -634,7 +634,7 @@ export function createConfigModal(apiKey, userProfileService) {
   profileDetails.style.cssText = `
     margin-top: 10px;
     padding: 10px;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border: 1px solid #e9ecef;
     border-radius: 4px;
     font-size: 12px;
@@ -721,15 +721,15 @@ export function createConfigModal(apiKey, userProfileService) {
     profileDetails.innerHTML = `
       <div style="margin-bottom: 12px;">
         <label for="user-info-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">User Info:</label>
-        <textarea id="user-info-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.userInfo || 'Not specified'}</textarea>
+        <textarea id="user-info-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.userInfo || 'Not specified'}</textarea>
       </div>
       <div style="margin-bottom: 12px;">
         <label for="purpose-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Purpose:</label>
-        <textarea id="purpose-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.purpose || 'Not specified'}</textarea>
+        <textarea id="purpose-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.purpose || 'Not specified'}</textarea>
       </div>
       <div style="margin-bottom: 12px;">
         <label for="bot-role-textarea" style="display: block; font-weight: bold; margin-bottom: 4px; font-size: 12px; color: black;">Bot Role:</label>
-        <textarea id="bot-role-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: #f8f9fa; color: #000;">${profile.botRole || 'Not specified'}</textarea>
+        <textarea id="bot-role-textarea" readonly style="width: 100%; height: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; resize: none; background: rgba(248, 249, 250,0.7); color: #000;">${profile.botRole || 'Not specified'}</textarea>
       </div>
     `;
     profileDetails.style.display = "block";
@@ -794,21 +794,21 @@ export function createDualContentLayout() {
   // Left content area for GPT responses
   const gptResponseArea = createContentArea();
   gptResponseArea.style.cssText += `
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
   `;
   gptResponseArea.id = "gpt-response-area";
 
   // Middle blank panel (do nothing with it)
   const blankPanel = createContentArea();
   blankPanel.style.cssText += `
-    background: #f0f0f0;
+    background: rgba(240, 240, 240,0.7);
   `;
   blankPanel.id = "blank-panel";
 
   // Right content area for transcript only
   const transcriptArea = createContentArea();
   transcriptArea.style.cssText += `
-    background: #fafafa;
+    background: rgba(250, 250, 250,0.7);
   `;
   transcriptArea.id = "transcript-area";
 
@@ -821,7 +821,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #d1ecf1;
+    background: rgba(209, 236, 241,0.7);
     border-radius: 4px;
   `;
 
@@ -833,7 +833,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #e2e3e5;
+    background: rgba(226, 227, 229,0.7);
     border-radius: 4px;
   `;
 
@@ -845,7 +845,7 @@ export function createDualContentLayout() {
     color: #333;
     text-align: center;
     padding: 4px;
-    background: #e9ecef;
+    background: rgba(233, 236, 239,0.7);
     border-radius: 4px;
   `;
 
@@ -891,7 +891,7 @@ function createResizeHandle() {
   const handle = document.createElement("div");
   handle.style.cssText = `
     width: 6px;
-    background: #ddd;
+    background: rgba(221, 221, 221,0.7);
     cursor: col-resize;
     border-radius: 3px;
     margin: 0 2px;
@@ -900,11 +900,11 @@ function createResizeHandle() {
   `;
   
   handle.addEventListener("mouseenter", () => {
-    handle.style.background = "#999";
+    handle.style.background = "rgba(153, 153, 153,0.7)";
   });
   
   handle.addEventListener("mouseleave", () => {
-    handle.style.background = "#ddd";
+    handle.style.background = "rgba(221, 221, 221,0.7)";
   });
   
   return handle;
@@ -955,7 +955,7 @@ export function createGPTContextMenu(e, options, onOptionClick) {
     position: fixed;
     top: ${e.pageY}px;
     left: ${e.pageX}px;
-    background: #fefefe;
+    background: rgba(254, 254, 254,0.7);
     border: 1px solid #ccc;
     padding: 4px;
     font-size: 13px;
@@ -972,7 +972,7 @@ export function createGPTContextMenu(e, options, onOptionClick) {
       cursor: pointer;
       border-bottom: 1px solid #eee;
     `;
-    item.onmouseenter = () => item.style.background = "#eee";
+    item.onmouseenter = () => item.style.background = "rgba(238, 238, 238,0.7)";
     item.onmouseleave = () => item.style.background = "transparent";
     item.onclick = () => onOptionClick(prefix, label);
     menu.appendChild(item);
@@ -1010,7 +1010,7 @@ export function createLockModal() {
   `;
   const box = document.createElement('div');
   box.style.cssText = `
-    background: #fff;
+    background: rgba(255, 255, 255,0.7);
     border-radius: 12px;
     box-shadow: 0 4px 32px rgba(0,0,0,0.18);
     padding: 40px 32px;
@@ -1036,7 +1036,7 @@ export function createLockModal() {
   loginBtn.style.cssText = `
     display: inline-block;
     padding: 12px 28px;
-    background: #0078d4;
+    background: rgba(0, 120, 212,0.7);
     color: #fff;
     border-radius: 6px;
     text-decoration: none;
@@ -1050,7 +1050,7 @@ export function createLockModal() {
   syncBtn.title = 'Sync & Validate Token';
   syncBtn.style.cssText = `
     padding: 12px;
-    background: #28a745;
+    background: rgba(40, 167, 69,0.7);
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -1066,7 +1066,7 @@ export function createLockModal() {
   // Add click handler for sync button
   syncBtn.addEventListener('click', async () => {
     syncBtn.innerHTML = '⏳';
-    syncBtn.style.background = '#6c757d';
+    syncBtn.style.background = 'rgba(108, 117, 125,0.7)';
     syncBtn.disabled = true;
     
     try {
@@ -1085,21 +1085,21 @@ export function createLockModal() {
       } else {
         // Failed - reset button
         syncBtn.innerHTML = '🔄';
-        syncBtn.style.background = '#28a745';
+        syncBtn.style.background = 'rgba(40, 167, 69,0.7)';
         syncBtn.disabled = false;
         syncBtn.title = 'Sync failed - try again';
       }
     } catch (error) {
       console.error('Sync failed:', error);
       syncBtn.innerHTML = '❌';
-      syncBtn.style.background = '#dc3545';
+      syncBtn.style.background = 'rgba(220, 53, 69,0.7)';
       syncBtn.disabled = false;
       syncBtn.title = 'Sync failed - try again';
       
       // Reset after 2 seconds
       setTimeout(() => {
         syncBtn.innerHTML = '🔄';
-        syncBtn.style.background = '#28a745';
+        syncBtn.style.background = 'rgba(40, 167, 69,0.7)';
         syncBtn.title = 'Sync & Validate Token';
       }, 2000);
     }

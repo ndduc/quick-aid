@@ -11,6 +11,7 @@ import {createHeader, createOverlay, createResizer, createLeftResizer, createInp
   createConfigModal, createDualContentLayout, createGPTContextMenu, CONTEXT_MENU_OPTIONS, createLockModal} from './ui.js'
 import userProfileService from './user-profile-service.js'
 import {extractMeetingTitle} from './ms-find-title-info.js'
+import {startMeetingMonitor, getMeetingStatus, getCurrentMeetingId, getCurrentMeetingTitle} from './ms-meeting-monitor.js'
 
 
 // Feature flag to switch between qikaid-bot and open-ai
@@ -67,8 +68,14 @@ let extraInterviewPrompt = getExtraInterviewPrompt();
 webSocketService.initialize();
 setupWebSocketClassification();
 
+// Make WebSocket service available globally for meeting monitor
+window.webSocketService = webSocketService;
+
 // Initialize MS Teams monitoring if meeting is detected
 setupMSTeamsMonitoring();
+
+// Initialize meeting monitor
+setupMeetingMonitor();
 
 // Prefetch user profiles on extension startup
 initializeUserProfiles();
@@ -170,7 +177,7 @@ minimizeBtn.addEventListener("click", () => {
     // Restore the overlay
     overlay.style.height = "600px";
     overlay.style.width = "1200px";
-    overlay.style.background = "white";
+    overlay.style.background = "rgba(255, 255, 255,0.7)";
     overlay.style.border = "2px solid #ccc";
     overlay.style.borderRadius = "8px";
     overlay.style.boxShadow = "0 0 12px rgba(0,0,0,0.3)";
@@ -187,7 +194,7 @@ minimizeBtn.addEventListener("click", () => {
     enableResizeFunctionality();
     
     // Reset header styling for restored state
-    header.style.background = "#f5f5f5";
+    header.style.background = "rgba(245, 245, 245,0.7)";
     header.style.borderRadius = "0";
     header.style.padding = "6px 10px";
     
@@ -266,7 +273,7 @@ minimizeBtn.addEventListener("click", () => {
     disableResizeFunctionality();
     
     // Update header styling for minimized state
-    header.style.background = "#E6C25A";
+    header.style.background = "rgba(230, 194, 90,0.7)";
     header.style.borderRadius = "8px 8px 0 0";
     header.style.padding = "8px 36px";
     
@@ -326,10 +333,10 @@ reconnectBtn.onclick = async () => {
           appendToOverlay("✅ WebSocket reconnection initiated!", true);
           
           // Update button appearance to show success
-          reconnectBtn.style.background = "#28a745";
+          reconnectBtn.style.background = "rgba(40, 167, 69,0.7)";
           reconnectBtn.textContent = "✅";
           setTimeout(() => {
-            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.style.background = "rgba(255, 193, 7,0.7)";
             reconnectBtn.textContent = "🔌";
           }, 2000);
           
@@ -338,10 +345,10 @@ reconnectBtn.onclick = async () => {
           appendToOverlay("❌ WebSocket reconnection failed: " + error.message, true);
           
           // Update button appearance to show failure
-          reconnectBtn.style.background = "#dc3545";
+          reconnectBtn.style.background = "rgba(220, 53, 69,0.7)";
           reconnectBtn.textContent = "❌";
           setTimeout(() => {
-            reconnectBtn.style.background = "#ffc107";
+            reconnectBtn.style.background = "rgba(255, 193, 7,0.7)";
             reconnectBtn.textContent = "🔌";
           }, 2000);
         }
@@ -553,6 +560,7 @@ async function initializeUserProfiles() {
 
 // Function to setup MS Teams monitoring
 function setupMSTeamsMonitoring() {
+  console.log("Setting up MS Teams monitoring");
   // Try to auto-detect and initialize MS Teams monitoring
   const teamsInitialized = autoInitializeMSTeams(appendToOverlay, updateLivePreview);
   
@@ -580,36 +588,50 @@ function setupMSTeamsMonitoring() {
       const status = getMSTeamsMonitoringStatus();
       updateMSTeamsStatus(status.isMonitoring);
     }, 5000);
-    
-    // Check WebSocket status and show offline transcript data every 10 seconds
+  }
+}
+
+// Function to setup meeting monitor
+function setupMeetingMonitor() {
+  console.log("Setting up meeting monitor");
+  
+  // Start the meeting monitor
+  startMeetingMonitor();
+  
+  // Log initial status
+  const status = getMeetingStatus();
+  console.log("Meeting monitor status:", status);
+  
+  // Set up periodic status logging (optional - for debugging)
+  setInterval(() => {
+    const currentStatus = getMeetingStatus();
+    if (currentStatus.isInMeeting) {
+      console.log(`Meeting Monitor: Active meeting ID: ${currentStatus.currentMeetingId}`);
+    }
+  }, 30000); // Log every 30 seconds when in meeting
+  
+
+
+}
+
+// Check WebSocket status and show offline transcript data every 10 seconds
     setInterval(() => {
       const wsStatus = webSocketService.getConnectionStatus();
       if (!wsStatus.isConnected) {
         // WebSocket is offline, show a status message in middle panel
         const blankPanel = document.getElementById('blank-panel');
         if (blankPanel && blankPanel.children.length === 0) {
-          const offlineMsg = document.createElement('div');
-          offlineMsg.style.cssText = `
-            padding: 16px;
-            margin: 16px;
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 2px dashed #dee2e6;
-          `;
-          offlineMsg.innerHTML = `
-            <div style="font-size: 16px; margin-bottom: 8px;">🔌 WebSocket Offline</div>
-            <div style="font-size: 12px;">Transcript data will appear here when connection is restored</div>
-            <div style="font-size: 10px; margin-top: 8px;">Click 🔌 button to check status</div>
-          `;
-          blankPanel.appendChild(offlineMsg);
+          // const offlineMsg = document.createElement('div');
+
+          // offlineMsg.innerHTML = `
+          //   <div style="font-size: 12px;">WebSocket Offline</div>
+          //   <div style="font-size: 12px;">Transcript data will appear here when connection is restored</div>
+          //   <div style="font-size: 12px;">Click 🔌 button to check status</div>
+          // `;
+          // blankPanel.appendChild(offlineMsg);
         }
       }
     }, 10000);
-  }
-}
 
 // Function to update MS Teams status indicator
 function updateMSTeamsStatus(isActive) {
@@ -640,7 +662,7 @@ function displayClassificationResult(result) {
     padding: 8px;
     margin: 4px 0;
     border-left: 4px solid #007bff;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border-radius: 4px;
     font-size: 12px;
   `;
@@ -695,7 +717,7 @@ function displayTranscriptInMiddlePanel(text, author = 'Unknown Speaker') {
     padding: 8px;
     margin: 4px 0;
     border-left: 4px solid #6c757d;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250,0.7);
     border-radius: 4px;
     font-size: 12px;
   `;
@@ -749,17 +771,17 @@ Session ID: ${wsStatus.meetingStatus.sessionId || 'None'}
 
 // Function to display meeting status changes
 function displayMeetingStatus(isInMeeting, sessionId = null) {
-  const statusText = isInMeeting 
-    ? `Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
-    : '⏹Teams Meeting Ended - Session Closed';
+  // const statusText = isInMeeting 
+  //   ? `Teams Meeting Started - Session: ${sessionId?.substring(0, 8)}...`
+  //   : '⏹Teams Meeting Ended - Session Closed';
     
-  appendToOverlay(statusText, true);
+  // appendToOverlay(statusText, true);
   
   // Update status button if available
   if (statusBtn) {
     statusBtn.textContent = isInMeeting ? "🎯" : "⏹️";
     statusBtn.title = isInMeeting ? `Active Meeting - ${sessionId?.substring(0, 8)}...` : "No Active Meeting";
-    statusBtn.style.background = isInMeeting ? "#28a745" : "#6c757d";
+    statusBtn.style.background = isInMeeting ? "rgba(40, 167, 69,0.7)" : "rgba(108, 117, 125,0.7)";
   }
   
   // Auto Enable Teams Live Captions for Transcribing
@@ -886,7 +908,7 @@ function finalizeLivePreview() {
     finalizedEntry.style.cssText = `
       margin-top: 10px;
       padding: 8px;
-      background: #f8f9fa;
+      background: rgba(248, 249, 250,0.7);
       border-left: 3px solid #28a745;
       border-radius: 4px;
       font-weight: normal;
